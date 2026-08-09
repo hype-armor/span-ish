@@ -6,10 +6,53 @@ An installable, offline-capable build of the Mexican Spanish drill app.
 
 | File | Purpose |
 | --- | --- |
-| `index.html` | The whole app. React and the UI are compiled and inlined — no CDN, no build step. |
+| `index.html` | The shell: metadata, the splash, and the script tags. Nothing else. |
+| `content/` | The card decks and every word the app teaches, one readable module per topic. **Edit these.** |
+| `styles.css` | Every style in the app. |
+| `app.js` | The drill engine, the scheduler, and the sections, compiled. Not meant to be hand-edited. |
+| `vendor/react.js` | React 18.3.1 and ReactDOM, vendored rather than loaded from a CDN. |
 | `manifest.webmanifest` | Name, icons, colours, and standalone display mode. |
 | `sw.js` | Service worker. Caches the shell so the app opens with no network. |
 | `icons/` | 192 / 512 / maskable / Apple touch icons, plus an SVG favicon. |
+
+There is still no build step and no CDN. The content modules are plain scripts,
+not ES modules, so the app also opens straight off the disk.
+
+## Adding or editing cards
+
+Everything you'd want to change lives in `content/`. Each file assigns onto a
+shared `window.MX` object:
+
+```js
+window.MX = window.MX || {};
+
+window.MX.mexicanismos = [
+  { mx: "carro", sp: "coche", en: "car", n: "Coche is understood but sounds foreign." },
+  // add a line, reload, and it's in the rotation
+];
+```
+
+Two rules:
+
+- **Keys must be unique across all of `content/`.** The files load in order and
+  assign onto the same object, so a repeated key silently overwrites the earlier
+  one. That is why names are topic-scoped (`verbSentences`, not `sentences`).
+- **A card's identity is derived from its content.** Review scheduling is keyed
+  off fields like the Spanish word or the trigger phrase, so editing one of
+  those retires the old card and introduces a new one. Fixing a typo in a `why`
+  or a translation is free; changing the answer resets that card's history.
+
+New cards appear in their own tab and in the interleaved Review deck
+automatically. After editing, bump `CACHE` in `sw.js` — see Republishing.
+
+Not every deck is drilled. `converterExamples` and `genderExceptionTable` are
+display only — the chips under the Transformer's live converter and the
+exceptions table on the Gender tab. A word in `converterExamples` has to end in
+one of the suffixes in the same file, or the converter will say no rule matches
+it.
+
+The scripts load in this order, and it matters: `vendor/react.js`, then every
+`content/` module, then `app.js` last.
 
 ## Running it
 
@@ -27,6 +70,10 @@ install prompt.
 **Hosting**: drop the whole folder on any static host (GitHub Pages, Netlify,
 Cloudflare Pages, S3). No server code required. Keep the relative paths intact;
 everything is referenced as `./…` so it works from a subdirectory too.
+
+**GitHub Pages**: `.github/workflows/pages.yml` publishes the repo root on every
+push to `main`. It needs Settings → Pages → Source set to **GitHub Actions**
+once; after that it is hands-off.
 
 ## Installing
 
@@ -47,9 +94,13 @@ nothing survives a reload.
 
 ## Republishing
 
-Change `CACHE = "mx-shortcuts-v1"` in `sw.js` to a new value whenever you update
-`index.html`. Without that bump, returning visitors keep getting the cached
-shell.
+Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v3"`) to a new value whenever
+you change anything the service worker caches. Without that bump, returning
+visitors keep getting the old shell.
+
+`SHELL` in the same file lists every cached path. Add new files there — an
+uncached `content/` module works online and breaks offline, which is the kind of
+bug you only find on a plane.
 
 ## Offline caveat
 
