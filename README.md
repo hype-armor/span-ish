@@ -47,9 +47,9 @@ nothing survives a reload.
 
 ## Republishing
 
-Change `CACHE = "mx-shortcuts-v1"` in `sw.js` to a new value whenever you update
-`index.html`. Without that bump, returning visitors keep getting the cached
-shell.
+Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v2"`) to a new value whenever
+you update `index.html`. Without that bump, returning visitors keep getting the
+cached shell.
 
 ## Offline caveat
 
