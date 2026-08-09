@@ -1,10 +1,11 @@
 /* Service worker: cache-first for the shell, so the app opens offline.
    Bump CACHE when you republish or the old shell will keep being served. */
-const CACHE = "mx-shortcuts-v3";
+const CACHE = "mx-shortcuts-v4";
 const SHELL = [
   "./",
   "./index.html",
   "./styles.css",
+  "./vendor/react.js",
   "./app.js",
   "./content/suffixes.js",
   "./content/sound.js",

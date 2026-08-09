@@ -128,3 +128,18 @@ window.MX.suffixes = [
     note: "Identical, and masculine. People-words add -a for the feminine: doctora."
   }
 ];
+
+/* Words offered as one-tap examples under the Transformer's live converter.
+   Each must end in one of the suffixes above, or it will show "no rule matches". */
+window.MX.converterExamples = [
+  "situation",
+  "university",
+  "delicious",
+  "artist",
+  "document",
+  "public",
+  "importance",
+  "organize",
+  "perfect",
+  "necessary"
+];

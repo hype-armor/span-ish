@@ -43,3 +43,16 @@ window.MX.genderNouns = [
   ["computadora", "la"],
   ["celular", "el"]
 ];
+
+/* The exceptions table, shown under the endings on the Gender tab.
+   Display only — the drilled version of these lives in content/rules.js.
+   Rows are [word, article, why it surprises]. */
+window.MX.genderExceptionTable = [
+  ["la mano", "la", "Ends in -o but is feminine"],
+  ["el día", "el", "Ends in -a but is masculine"],
+  ["el mapa · el sofá", "el", "Masculine despite the -a"],
+  ["la foto · la moto", "la", "Clipped from fotografía and motocicleta"],
+  ["el agua", "el", "A feminine noun that takes el to avoid the a-a clash — but el agua fría"],
+  ["el problema · el sistema · el tema", "el", "Greek -ma nouns, all masculine"],
+  ["la computadora", "la", "Feminine in Mexico; Spain's ordenador is masculine"]
+];

@@ -7,9 +7,10 @@ An installable, offline-capable build of the Mexican Spanish drill app.
 | File | Purpose |
 | --- | --- |
 | `index.html` | The shell: metadata, the splash, and the script tags. Nothing else. |
-| `content/` | The card decks, one readable module per topic. **Edit these.** |
+| `content/` | The card decks and every word the app teaches, one readable module per topic. **Edit these.** |
 | `styles.css` | Every style in the app. |
-| `app.js` | React, the drill engine, and the sections, compiled together. Not meant to be hand-edited. |
+| `app.js` | The drill engine, the scheduler, and the sections, compiled. Not meant to be hand-edited. |
+| `vendor/react.js` | React 18.3.1 and ReactDOM, vendored rather than loaded from a CDN. |
 | `manifest.webmanifest` | Name, icons, colours, and standalone display mode. |
 | `sw.js` | Service worker. Caches the shell so the app opens with no network. |
 | `icons/` | 192 / 512 / maskable / Apple touch icons, plus an SVG favicon. |
@@ -43,6 +44,15 @@ Two rules:
 
 New cards appear in their own tab and in the interleaved Review deck
 automatically. After editing, bump `CACHE` in `sw.js` — see Republishing.
+
+Not every deck is drilled. `converterExamples` and `genderExceptionTable` are
+display only — the chips under the Transformer's live converter and the
+exceptions table on the Gender tab. A word in `converterExamples` has to end in
+one of the suffixes in the same file, or the converter will say no rule matches
+it.
+
+The scripts load in this order, and it matters: `vendor/react.js`, then every
+`content/` module, then `app.js` last.
 
 ## Running it
 
