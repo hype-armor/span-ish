@@ -1,10 +1,12 @@
-name: Deploy to GitHub Pages
+name: Check and deploy
 
-# Publishes the repo root as-is. There is no build step: the app is plain
-# static files, so what is committed is what gets served.
+# Publishes the repo root as-is. Nothing is built here: app.js is committed,
+# and the check job only verifies it still matches src/. Deploys happen on
+# main; pull requests get the checks without the publish.
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -18,18 +20,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  check:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check the scripts parse
-        run: for f in app.js vendor/react.js content/*.js; do node --check "$f"; done
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-      - name: Check every script and stylesheet is in the service worker shell
+      - name: Scripts parse
+        run: for f in app.js vendor/react.js content/*.js tools/*.js; do node --check "$f"; done
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: app.js is built from src/
+        run: node tools/build.js --check
+
+      - name: Every script and stylesheet is in the service worker shell
         run: |
           missing=0
           for f in styles.css app.js vendor/react.js content/*.js; do
@@ -37,7 +46,33 @@ jobs:
           done
           exit $missing
 
+      - name: Library
+        run: node tools/test-lib.js
+
+      - name: Content
+        run: node tools/check-content.js
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke
+        run: node tools/smoke.js
+
+  deploy:
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/configure-pages@v5
+
+      # The dev tooling is not part of the app and should not be served.
+      - name: Drop dev-only files
+        run: rm -rf tools src package.json package-lock.json node_modules
 
       - uses: actions/upload-pages-artifact@v3
         with:

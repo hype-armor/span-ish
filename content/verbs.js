@@ -266,7 +266,7 @@ window.MX.verbSentences = [
   },
   {
     v: "jugar",
-    p: "ella",
+    p: "él / ella",
     a: "juega",
     sents: [
       { s: "Ella ___ fútbol los sábados.", t: "She plays soccer on Saturdays." },
@@ -332,6 +332,213 @@ window.MX.verbSentences = [
       { s: "___ las instrucciones.", t: "I follow the instructions." },
       { s: "___ trabajando aquí.", t: "I still work here." },
       { s: "___ sin entender.", t: "I still don't get it." }
+    ]
+  },
+  {
+    v: "tener",
+    p: "él / ella",
+    a: "tiene",
+    sents: [
+      { s: "Mi hermana ___ dos hijos.", t: "My sister has two kids." },
+      { s: "Mi jefe ___ mucha prisa.", t: "My boss is in a big hurry." }
+    ]
+  },
+  {
+    v: "querer",
+    p: "nosotros",
+    a: "queremos",
+    sents: [
+      { s: "___ ir a la playa el sábado.", t: "We want to go to the beach on Saturday." },
+      { s: "Mi esposa y yo ___ otro café.", t: "My wife and I want another coffee." }
+    ]
+  },
+  {
+    v: "poder",
+    p: "ellos",
+    a: "pueden",
+    sents: [
+      { s: "Los niños no ___ entrar solos.", t: "The kids can't go in on their own." },
+      { s: "¿___ ayudarme con esto?", t: "Can you all help me with this?" }
+    ]
+  },
+  {
+    v: "ser",
+    p: "nosotros",
+    a: "somos",
+    sents: [
+      { s: "___ de Monterrey.", t: "We're from Monterrey." },
+      { s: "No ___ turistas, vivimos aquí.", t: "We're not tourists, we live here." }
+    ]
+  },
+  {
+    v: "estar",
+    p: "nosotros",
+    a: "estamos",
+    sents: [
+      { s: "___ en el centro ahorita.", t: "We're downtown right now." },
+      { s: "___ listos para salir.", t: "We're ready to go." }
+    ]
+  },
+  {
+    v: "ir",
+    p: "ellos",
+    a: "van",
+    sents: [
+      { s: "Mis papás ___ al mercado los domingos.", t: "My parents go to the market on Sundays." },
+      { s: "¿A qué hora ___ ustedes?", t: "What time are you all going?" }
+    ]
+  },
+  {
+    v: "hacer",
+    p: "nosotros",
+    a: "hacemos",
+    sents: [
+      { s: "___ tamales en diciembre.", t: "We make tamales in December." },
+      { s: "¿Qué ___ el viernes?", t: "What are we doing on Friday?" }
+    ]
+  },
+  {
+    v: "venir",
+    p: "tú",
+    a: "vienes",
+    sents: [
+      { s: "¿___ conmigo?", t: "Are you coming with me?" },
+      { s: "Siempre ___ tarde.", t: "You always show up late." }
+    ]
+  },
+  {
+    v: "decir",
+    p: "él / ella",
+    a: "dice",
+    sents: [
+      { s: "Mi mamá ___ que no.", t: "My mom says no." },
+      { s: "El letrero ___ “cerrado”.", t: "The sign says “closed”." }
+    ]
+  },
+  {
+    v: "salir",
+    p: "nosotros",
+    a: "salimos",
+    sents: [
+      { s: "___ a las ocho.", t: "We leave at eight." },
+      { s: "Los viernes ___ a cenar.", t: "On Fridays we go out to dinner." }
+    ]
+  },
+  {
+    v: "saber",
+    p: "tú",
+    a: "sabes",
+    sents: [
+      { s: "¿___ dónde queda el metro?", t: "Do you know where the metro is?" },
+      { s: "Tú ___ más que yo de esto.", t: "You know more about this than I do." }
+    ]
+  },
+  {
+    v: "conocer",
+    p: "ellos",
+    a: "conocen",
+    sents: [
+      { s: "Ellos ya ___ la ciudad.", t: "They already know the city." },
+      { s: "Mis primos no ___ a mi novia.", t: "My cousins haven't met my girlfriend." }
+    ]
+  },
+  {
+    v: "poner",
+    p: "él / ella",
+    a: "pone",
+    sents: [
+      { s: "Ella ___ la mesa.", t: "She sets the table." },
+      { s: "Mi hermano le ___ mucha salsa a todo.", t: "My brother puts a lot of salsa on everything." }
+    ]
+  },
+  {
+    v: "dormir",
+    p: "nosotros",
+    a: "dormimos",
+    sents: [
+      { s: "___ ocho horas los fines de semana.", t: "We sleep eight hours on weekends." },
+      { s: "Aquí ___ muy bien, está fresco.", t: "We sleep well here, it's cool." }
+    ]
+  },
+  {
+    v: "pensar",
+    p: "ellos",
+    a: "piensan",
+    sents: [
+      { s: "Ellos ___ mudarse a Guadalajara.", t: "They're thinking of moving to Guadalajara." },
+      { s: "¿Qué ___ tus papás?", t: "What do your parents think?" }
+    ]
+  },
+  {
+    v: "volver",
+    p: "él / ella",
+    a: "vuelve",
+    sents: [
+      { s: "Mi hermano ___ el lunes.", t: "My brother gets back on Monday." },
+      { s: "Ella siempre ___ al mismo lugar.", t: "She always goes back to the same place." }
+    ]
+  },
+  {
+    v: "jugar",
+    p: "ellos",
+    a: "juegan",
+    sents: [
+      { s: "Los niños ___ en el parque.", t: "The kids play in the park." },
+      { s: "Mis amigos ___ fútbol los sábados.", t: "My friends play soccer on Saturdays." }
+    ]
+  },
+  {
+    v: "pedir",
+    p: "nosotros",
+    a: "pedimos",
+    sents: [
+      { s: "Siempre ___ tacos al pastor.", t: "We always order tacos al pastor." },
+      { s: "¿___ una para llevar?", t: "Shall we order one to go?" }
+    ]
+  },
+  {
+    v: "oír",
+    p: "él / ella",
+    a: "oye",
+    sents: [
+      { s: "Mi abuela no ___ bien.", t: "My grandmother doesn't hear well." },
+      { s: "Ella no ___ nada desde su cuarto.", t: "She can't hear a thing from her room." }
+    ]
+  },
+  {
+    v: "traer",
+    p: "ellos",
+    a: "traen",
+    sents: [
+      { s: "Ellos ___ el postre.", t: "They're bringing dessert." },
+      { s: "Los meseros ___ la salsa aparte.", t: "The waiters bring the salsa on the side." }
+    ]
+  },
+  {
+    v: "ver",
+    p: "nosotros",
+    a: "vemos",
+    sents: [
+      { s: "___ la tele en la noche.", t: "We watch TV at night." },
+      { s: "Desde aquí ___ el volcán.", t: "From here we can see the volcano." }
+    ]
+  },
+  {
+    v: "dar",
+    p: "tú",
+    a: "das",
+    sents: [
+      { s: "¿Me ___ tu número?", t: "Will you give me your number?" },
+      { s: "Siempre ___ buenos consejos.", t: "You always give good advice." }
+    ]
+  },
+  {
+    v: "seguir",
+    p: "él / ella",
+    a: "sigue",
+    sents: [
+      { s: "Mi hermana ___ en la universidad.", t: "My sister is still at university." },
+      { s: "El camión ___ derecho hasta el centro.", t: "The bus carries straight on downtown." }
     ]
   }
 ];

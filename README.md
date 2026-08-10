@@ -9,14 +9,28 @@ An installable, offline-capable build of the Mexican Spanish drill app.
 | `index.html` | The shell: metadata, the splash, and the script tags. Nothing else. |
 | `content/` | The card decks and every word the app teaches, one readable module per topic. **Edit these.** |
 | `styles.css` | Every style in the app. |
-| `app.js` | The drill engine, the scheduler, and the sections, compiled. Not meant to be hand-edited. |
+| `src/` | The app's source: the drill engine, the scheduler, and the sections. |
+| `app.js` | Built from `src/`. Committed so the site stays static — don't edit it by hand. |
 | `vendor/react.js` | React 18.3.1 and ReactDOM, vendored rather than loaded from a CDN. |
 | `manifest.webmanifest` | Name, icons, colours, and standalone display mode. |
 | `sw.js` | Service worker. Caches the shell so the app opens with no network. |
 | `icons/` | 192 / 512 / maskable / Apple touch icons, plus an SVG favicon. |
 
-There is still no build step and no CDN. The content modules are plain scripts,
-not ES modules, so the app also opens straight off the disk.
+Nothing is built at deploy time and nothing loads from a CDN: `app.js` is
+committed, so the site is served exactly as it sits in the repo. The content
+modules are plain scripts rather than ES modules, so the app also opens straight
+off the disk.
+
+Changing anything under `src/` means rebuilding:
+
+```bash
+npm install
+npm run build     # writes app.js
+npm test          # build is current + unit tests + content + smoke test
+```
+
+CI fails if `app.js` does not match what `src/` builds to, so a stale bundle
+cannot reach the site.
 
 ## Adding or editing cards
 
@@ -89,12 +103,21 @@ device and in that browser. Installing to the home screen does *not* copy an
 existing browser profile's data, so export first from **Review → Copy progress**
 and paste it into the installed app if you want to carry history across.
 
+Using the app on more than one device gives you two histories that drift apart.
+**Review → Paste to restore** offers two ways to reconcile them:
+
+- **Merge into this device** folds the pasted history in. For an item both sides
+  know, the more recent review wins — it is the freshest evidence about that
+  memory, including when it is a lapse — and the running totals take the larger
+  of the two. Merging the same export twice changes nothing the second time.
+- **Replace everything** discards what is on this device.
+
 Private/incognito windows fall back to in-memory storage: the app works, but
 nothing survives a reload.
 
 ## Republishing
 
-Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v3"`) to a new value whenever
+Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v7"`) to a new value whenever
 you change anything the service worker caches. Without that bump, returning
 visitors keep getting the old shell.
 
