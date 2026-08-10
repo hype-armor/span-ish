@@ -16,7 +16,7 @@ const ROOT = path.join(__dirname, "..");
 const CONTENT = path.join(ROOT, "content");
 
 /* Load in the same order index.html does, so "later file wins" matches reality. */
-const ORDER = ["suffixes", "sound", "verbs", "preterite", "tenses", "subjunctive", "gender", "mexicanismos", "connectors", "rules"];
+const ORDER = ["suffixes", "sound", "verbs", "preterite", "imperfect", "tenses", "subjunctive", "gender", "mexicanismos", "connectors", "rules"];
 
 let failures = 0;
 const fail = (where, msg) => { console.error(`  ✗ ${where}: ${msg}`); failures++; };
@@ -187,6 +187,33 @@ requireBlank("preteriteSentences", (r) => r.sents);
   });
 }
 
+requireFields("imperfectEndings", ["kind", "e", "ex", "n"]);
+requireUnique("imperfectEndings", "the verb class", (r) => r.kind);
+requireFields("imperfectIrregular", ["v", "f", "n"]);
+requireUnique("imperfectIrregular", "the verb", (r) => r.v);
+(MX.imperfectIrregular || []).forEach((r, i) => {
+  const forms = String(r.f).split(",").map((f) => f.trim());
+  if (forms.length !== 5) fail("imperfectIrregular", `entry ${i} ("${r.v}") lists ${forms.length} forms; Mexico uses five (no vosotros)`);
+});
+requireFields("aspectCues", ["cue", "side", "n"]);
+requireUnique("aspectCues", "the cue", (r) => r.cue);
+requireOneOf("aspectCues", "side", ["pret", "imp"], (r) => r.side);
+
+requireFields("aspectContrasts", ["id", "cue", "mood", "sents"]);
+requireUnique("aspectContrasts", "the id", (r) => r.id);
+requireOneOf("aspectContrasts", "mood", ["pret", "imp"], (r) => r.mood);
+(MX.aspectContrasts || []).forEach((r, i) => {
+  const sents = r.sents || [];
+  if (!sents.length) fail("aspectContrasts", `entry ${i} has no sentences`);
+  sents.forEach((s, j) => {
+    if (!String(s.s || "").includes("___")) fail("aspectContrasts", `entry ${i} sentence ${j} has no ___ blank`);
+    if (!s.t) fail("aspectContrasts", `entry ${i} sentence ${j} has no translation`);
+    if (!s.pret || !s.imp) fail("aspectContrasts", `entry ${i} sentence ${j} needs both a pret and an imp form`);
+    /* the point of the drill is that the wrong answer is the other real form */
+    if (s.pret === s.imp) fail("aspectContrasts", `entry ${i} sentence ${j} has identical forms, so the card has no answer`);
+  });
+});
+
 requireFields("periphrasis", ["p", "m", "ex", "t", "note"], { min: 4 });
 requireUnique("periphrasis", "the pattern", (r) => r.p);
 checkConf("periphrasis", (r) => r.p);
@@ -239,7 +266,7 @@ requireFields("ruleSubjunctiveForms", ["v", "a", "why"]);
 requireUnique("ruleSubjunctiveForms", "the verb", (r) => r.v);
 
 /* These two supply their own options, so the answer has to be among them. */
-for (const name of ["ruleFacts", "ruleSubjunctive", "rulePreterite"]) {
+for (const name of ["ruleFacts", "ruleSubjunctive", "rulePreterite", "ruleImperfect"]) {
   requireFields(name, ["q", "sub", "a", "opts", "why"]);
   requireUnique(name, "the prompt", (r) => r.q);
   (MX[name] || []).forEach((r, i) => {

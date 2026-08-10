@@ -58,6 +58,16 @@ jobs:
       - name: Smoke
         run: node tools/smoke.js
 
+      # Reports what a pull request changes visually. Deliberately not a gate:
+      # an intended redesign is not a failure, and a check that cries wolf on
+      # every design change is a check people learn to ignore.
+      - name: Visual change report
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          node tools/visual-diff.js --against origin/${{ github.base_ref }}
+
   deploy:
     needs: check
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'

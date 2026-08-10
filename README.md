@@ -32,6 +32,27 @@ npm test          # build is current + unit tests + content + smoke test
 CI fails if `app.js` does not match what `src/` builds to, so a stale bundle
 cannot reach the site.
 
+### Checking a refactor changed nothing
+
+```bash
+npm run visual                        # against HEAD
+node tools/visual-diff.js --against main
+```
+
+Renders every tab in the working tree and in another revision and compares the
+pixels. There are no baseline images in the repo — the other side is
+materialised from git on demand, so there is nothing to keep up to date.
+
+It exists because `app.js` is generated now, so a refactor can change what the
+page looks like without changing anything a unit test or the smoke test would
+notice. The bug that prompted it was `{" "}` in JSX: it renders as its own DOM
+text node, which moved an `<em>` by a hundredth of a pixel and changed its
+antialiasing. The markup compared byte-identical; only the pixels disagreed.
+
+The harness renders one side twice and requires it to match itself before
+comparing anything, so a green run cannot mean "the comparison was looking at
+nothing". CI runs it on pull requests as a report rather than a gate.
+
 ## Adding or editing cards
 
 Everything you'd want to change lives in `content/`. Each file assigns onto a
@@ -117,7 +138,7 @@ nothing survives a reload.
 
 ## Republishing
 
-Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v7"`) to a new value whenever
+Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v8"`) to a new value whenever
 you change anything the service worker caches. Without that bump, returning
 visitors keep getting the old shell.
 
