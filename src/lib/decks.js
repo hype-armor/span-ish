@@ -35,7 +35,7 @@ function rulesDeck() {
   const {
     suffixes, genderEndings, ruleGenderExceptions, ruleVerbForms,
     ruleVerbEndings, ruleFacts, ruleSubjunctive, ruleSubjunctiveForms, ruleAccents,
-    rulePreterite,
+    rulePreterite, ruleImperfect,
   } = content;
 
   const suffixCards = suffixes.map((r) => {
@@ -90,6 +90,11 @@ function rulesDeck() {
     q: r.q, sub: r.sub, a: r.a, opts: shuffle(r.opts), why: r.why,
   }));
 
+  const imperfectRuleCards = ruleImperfect.map((r) => ({
+    id: "rul:impf:" + r.q, kind: "mc", mod: "rules",
+    q: r.q, sub: r.sub, a: r.a, opts: shuffle(r.opts), why: r.why,
+  }));
+
   const subjunctiveRuleCards = ruleSubjunctive.map((r) => ({
     id: "rul:sj:" + r.q, kind: "mc", mod: "rules",
     q: r.q, sub: r.sub, a: r.a, opts: shuffle(r.opts), why: r.why,
@@ -110,7 +115,7 @@ function rulesDeck() {
 
   return [
     ...suffixCards, ...genderRuleCards, ...genderExceptionCards,
-    ...verbFormCards, ...verbEndingCards, ...factCards, ...preteriteCards,
+    ...verbFormCards, ...verbEndingCards, ...factCards, ...preteriteCards, ...imperfectRuleCards,
     ...subjunctiveRuleCards, ...subjunctiveFormCards, ...accentCards,
   ];
 }
@@ -215,7 +220,31 @@ function pastDeck() {
     };
   });
 
-  return [...sentenceCards, ...stemCards];
+  const imperfectCards = content.imperfectIrregular.map((v) => {
+    const yo = v.f.split(",")[0].trim();
+    return {
+      id: "impf:" + v.v, kind: "type", mod: "past",
+      q: v.v, sub: "Type the yo imperfect",
+      a: yo, canon: yo, audio: yo,
+      why: `${v.f}. ${v.n}`,
+    };
+  });
+
+  /* The choice, not the form: both options are real forms of the same verb,
+     so the card cannot be answered by spotting the impossible one. */
+  const aspectCards = content.aspectContrasts.map((entry) => {
+    const sentence = pick(entry.sents);
+    const answer = entry.mood === "pret" ? sentence.pret : sentence.imp;
+    return {
+      id: "asp:" + entry.id, kind: "mc", mod: "past",
+      q: sentence.s.replace("___", BLANK), sub: "Preterite or imperfect?",
+      a: answer, opts: shuffle([sentence.pret, sentence.imp]),
+      audio: sentence.s.replace("___", answer),
+      why: `${entry.cue} — ${entry.mood === "pret" ? "a finished event, so the preterite" : "the state around an event, so the imperfect"}. ${sentence.t}`,
+    };
+  });
+
+  return [...sentenceCards, ...stemCards, ...imperfectCards, ...aspectCards];
 }
 
 function periphrasisDeck() {

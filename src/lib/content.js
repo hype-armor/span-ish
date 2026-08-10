@@ -19,6 +19,12 @@ export const preteriteStems = MX.preteriteStems;
 export const preteriteSentences = MX.preteriteSentences;
 export const rulePreterite = MX.rulePreterite;
 
+export const imperfectEndings = MX.imperfectEndings;
+export const imperfectIrregular = MX.imperfectIrregular;
+export const aspectCues = MX.aspectCues;
+export const aspectContrasts = MX.aspectContrasts;
+export const ruleImperfect = MX.ruleImperfect;
+
 export const periphrasis = MX.periphrasis;
 
 export const subjunctiveTriggers = MX.subjunctiveTriggers;

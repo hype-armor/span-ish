@@ -138,7 +138,7 @@ nothing survives a reload.
 
 ## Republishing
 
-Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v7"`) to a new value whenever
+Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v8"`) to a new value whenever
 you change anything the service worker caches. Without that bump, returning
 visitors keep getting the old shell.
 
