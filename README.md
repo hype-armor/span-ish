@@ -9,14 +9,28 @@ An installable, offline-capable build of the Mexican Spanish drill app.
 | `index.html` | The shell: metadata, the splash, and the script tags. Nothing else. |
 | `content/` | The card decks and every word the app teaches, one readable module per topic. **Edit these.** |
 | `styles.css` | Every style in the app. |
-| `app.js` | The drill engine, the scheduler, and the sections, compiled. Not meant to be hand-edited. |
+| `src/` | The app's source: the drill engine, the scheduler, and the sections. |
+| `app.js` | Built from `src/`. Committed so the site stays static — don't edit it by hand. |
 | `vendor/react.js` | React 18.3.1 and ReactDOM, vendored rather than loaded from a CDN. |
 | `manifest.webmanifest` | Name, icons, colours, and standalone display mode. |
 | `sw.js` | Service worker. Caches the shell so the app opens with no network. |
 | `icons/` | 192 / 512 / maskable / Apple touch icons, plus an SVG favicon. |
 
-There is still no build step and no CDN. The content modules are plain scripts,
-not ES modules, so the app also opens straight off the disk.
+Nothing is built at deploy time and nothing loads from a CDN: `app.js` is
+committed, so the site is served exactly as it sits in the repo. The content
+modules are plain scripts rather than ES modules, so the app also opens straight
+off the disk.
+
+Changing anything under `src/` means rebuilding:
+
+```bash
+npm install
+npm run build     # writes app.js
+npm test          # build is current + content + smoke test
+```
+
+CI fails if `app.js` does not match what `src/` builds to, so a stale bundle
+cannot reach the site.
 
 ## Adding or editing cards
 
@@ -94,7 +108,7 @@ nothing survives a reload.
 
 ## Republishing
 
-Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v3"`) to a new value whenever
+Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v6"`) to a new value whenever
 you change anything the service worker caches. Without that bump, returning
 visitors keep getting the old shell.
 
