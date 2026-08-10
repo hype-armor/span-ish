@@ -8,10 +8,12 @@
     "check": "node tools/check-content.js",
     "smoke": "node tools/smoke.js",
     "test": "npm run build:check && npm run test:lib && npm run check && npm run smoke",
-    "test:lib": "node tools/test-lib.js"
+    "test:lib": "node tools/test-lib.js",
+    "visual": "node tools/visual-diff.js"
   },
   "devDependencies": {
     "esbuild": "^0.28.0",
-    "playwright": "^1.49.0"
+    "playwright": "^1.49.0",
+    "pngjs": "^7.0.0"
   }
 }
