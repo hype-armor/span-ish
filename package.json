@@ -1,0 +1,13 @@
+{
+  "name": "span-ish",
+  "private": true,
+  "description": "Dev tooling only. The app itself has no build step and no runtime dependencies.",
+  "scripts": {
+    "check": "node tools/check-content.js",
+    "smoke": "node tools/smoke.js",
+    "test": "npm run check && npm run smoke"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}
