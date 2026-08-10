@@ -46,6 +46,9 @@ jobs:
           done
           exit $missing
 
+      - name: Library
+        run: node tools/test-lib.js
+
       - name: Content
         run: node tools/check-content.js
 

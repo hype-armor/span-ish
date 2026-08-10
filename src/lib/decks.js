@@ -21,6 +21,7 @@ export const MODULES = [
   "suffix",
   "sound",
   "verbs",
+  "past",
   "periphrasis",
   "subjunctive",
   "gender",
@@ -34,6 +35,7 @@ function rulesDeck() {
   const {
     suffixes, genderEndings, ruleGenderExceptions, ruleVerbForms,
     ruleVerbEndings, ruleFacts, ruleSubjunctive, ruleSubjunctiveForms, ruleAccents,
+    rulePreterite,
   } = content;
 
   const suffixCards = suffixes.map((r) => {
@@ -83,6 +85,11 @@ function rulesDeck() {
     q: r.q, sub: r.sub, a: r.a, opts: shuffle(r.opts), why: r.why,
   }));
 
+  const preteriteCards = rulePreterite.map((r) => ({
+    id: "rul:pret:" + r.q, kind: "mc", mod: "rules",
+    q: r.q, sub: r.sub, a: r.a, opts: shuffle(r.opts), why: r.why,
+  }));
+
   const subjunctiveRuleCards = ruleSubjunctive.map((r) => ({
     id: "rul:sj:" + r.q, kind: "mc", mod: "rules",
     q: r.q, sub: r.sub, a: r.a, opts: shuffle(r.opts), why: r.why,
@@ -103,7 +110,7 @@ function rulesDeck() {
 
   return [
     ...suffixCards, ...genderRuleCards, ...genderExceptionCards,
-    ...verbFormCards, ...verbEndingCards, ...factCards,
+    ...verbFormCards, ...verbEndingCards, ...factCards, ...preteriteCards,
     ...subjunctiveRuleCards, ...subjunctiveFormCards, ...accentCards,
   ];
 }
@@ -184,6 +191,33 @@ function verbsDeck() {
   return [...sentenceCards, ...yoFormCards];
 }
 
+/* Same two shapes as the present-tense deck: forms inside sentences, plus
+   the bare yo form for every strong preterite. */
+function pastDeck() {
+  const sentenceCards = content.preteriteSentences.map((entry) => {
+    const sentence = pick(entry.sents);
+    return {
+      id: "pret:" + entry.v + ":" + entry.a, kind: "type", mod: "past",
+      q: sentence.s.replace("___", BLANK), sub: `${entry.v} · ${entry.p} · preterite`,
+      a: entry.a, canon: entry.a,
+      audio: sentence.s.replace("___", entry.a),
+      why: `${sentence.s.replace("___", entry.a)} — ${sentence.t}`,
+    };
+  });
+
+  const stemCards = content.preteriteStems.map((v) => {
+    const yo = v.f.split(",")[0].trim();
+    return {
+      id: "prets:" + v.v, kind: "type", mod: "past",
+      q: v.v, sub: "Type the yo preterite",
+      a: yo, canon: yo, audio: yo,
+      why: `Stem ${v.stem} — ${v.f}. ${v.n}`,
+    };
+  });
+
+  return [...sentenceCards, ...stemCards];
+}
+
 function periphrasisDeck() {
   const all = content.periphrasis;
   return all.map((p) => ({
@@ -258,6 +292,7 @@ const BUILDERS = {
   suffix: suffixDeck,
   sound: soundDeck,
   verbs: verbsDeck,
+  past: pastDeck,
   periphrasis: periphrasisDeck,
   subjunctive: subjunctiveDeck,
   gender: genderDeck,

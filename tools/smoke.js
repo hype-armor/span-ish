@@ -12,7 +12,7 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.join(__dirname, "..");
-const TABS = ["Rules", "Transformer", "Sound", "Verbs", "Tenses", "Subjunctive", "Gender", "Mexicanismos", "Connectors", "Review"];
+const TABS = ["Rules", "Transformer", "Sound", "Verbs", "Past", "Tenses", "Subjunctive", "Gender", "Mexicanismos", "Connectors", "Review"];
 const TYPES = {
   ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
   ".json": "application/json", ".webmanifest": "application/manifest+json",

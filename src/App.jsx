@@ -9,6 +9,7 @@ import { RulesTab } from "./sections/Rules.jsx";
 import { TransformerTab } from "./sections/Transformer.jsx";
 import { SoundTab } from "./sections/Sound.jsx";
 import { VerbsTab } from "./sections/Verbs.jsx";
+import { PastTab } from "./sections/Past.jsx";
 import { TensesTab } from "./sections/Tenses.jsx";
 import { SubjunctiveTab } from "./sections/Subjunctive.jsx";
 import { GenderTab } from "./sections/Gender.jsx";
@@ -21,6 +22,7 @@ const TABS = [
   { id: "transformer", label: "Transformer", Section: TransformerTab },
   { id: "sound", label: "Sound", Section: SoundTab },
   { id: "verbs", label: "Verbs", Section: VerbsTab },
+  { id: "past", label: "Past", Section: PastTab },
   { id: "periphrasis", label: "Tenses", Section: TensesTab },
   { id: "subjunctive", label: "Subjunctive", Section: SubjunctiveTab },
   { id: "gender", label: "Gender", Section: GenderTab },

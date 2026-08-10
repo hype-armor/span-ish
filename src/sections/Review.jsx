@@ -8,7 +8,7 @@ export function ReviewTab({ progress, record, speak, persist, sum }) {
       <h2>Everything at once, scheduled by decay</h2>
       <p className="lede">
         Single-topic drills tell you which rule applies before you start — real Spanish doesn't. This
-        interleaves all nine modules and picks by how overdue each item is. Every item also carries
+        interleaves all ten modules and picks by how overdue each item is. Every item also carries
         its own difficulty: things you keep missing come back sooner forever, things you never miss
         stretch out faster than a fixed ladder would.
       </p>

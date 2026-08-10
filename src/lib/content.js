@@ -15,6 +15,10 @@ export const dictation = MX.dictation;
 export const irregularVerbs = MX.irregularVerbs;
 export const verbSentences = MX.verbSentences;
 
+export const preteriteStems = MX.preteriteStems;
+export const preteriteSentences = MX.preteriteSentences;
+export const rulePreterite = MX.rulePreterite;
+
 export const periphrasis = MX.periphrasis;
 
 export const subjunctiveTriggers = MX.subjunctiveTriggers;

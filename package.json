@@ -7,7 +7,8 @@
     "build:check": "node tools/build.js --check",
     "check": "node tools/check-content.js",
     "smoke": "node tools/smoke.js",
-    "test": "npm run build:check && npm run check && npm run smoke"
+    "test": "npm run build:check && npm run test:lib && npm run check && npm run smoke",
+    "test:lib": "node tools/test-lib.js"
   },
   "devDependencies": {
     "esbuild": "^0.28.0",

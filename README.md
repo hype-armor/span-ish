@@ -26,7 +26,7 @@ Changing anything under `src/` means rebuilding:
 ```bash
 npm install
 npm run build     # writes app.js
-npm test          # build is current + content + smoke test
+npm test          # build is current + unit tests + content + smoke test
 ```
 
 CI fails if `app.js` does not match what `src/` builds to, so a stale bundle
@@ -103,12 +103,21 @@ device and in that browser. Installing to the home screen does *not* copy an
 existing browser profile's data, so export first from **Review → Copy progress**
 and paste it into the installed app if you want to carry history across.
 
+Using the app on more than one device gives you two histories that drift apart.
+**Review → Paste to restore** offers two ways to reconcile them:
+
+- **Merge into this device** folds the pasted history in. For an item both sides
+  know, the more recent review wins — it is the freshest evidence about that
+  memory, including when it is a lapse — and the running totals take the larger
+  of the two. Merging the same export twice changes nothing the second time.
+- **Replace everything** discards what is on this device.
+
 Private/incognito windows fall back to in-memory storage: the app works, but
 nothing survives a reload.
 
 ## Republishing
 
-Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v6"`) to a new value whenever
+Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v7"`) to a new value whenever
 you change anything the service worker caches. Without that bump, returning
 visitors keep getting the old shell.
 

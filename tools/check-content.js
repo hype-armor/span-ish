@@ -16,7 +16,7 @@ const ROOT = path.join(__dirname, "..");
 const CONTENT = path.join(ROOT, "content");
 
 /* Load in the same order index.html does, so "later file wins" matches reality. */
-const ORDER = ["suffixes", "sound", "verbs", "tenses", "subjunctive", "gender", "mexicanismos", "connectors", "rules"];
+const ORDER = ["suffixes", "sound", "verbs", "preterite", "tenses", "subjunctive", "gender", "mexicanismos", "connectors", "rules"];
 
 let failures = 0;
 const fail = (where, msg) => { console.error(`  ✗ ${where}: ${msg}`); failures++; };
@@ -164,6 +164,29 @@ requireFields("verbSentences", ["v", "p", "a", "sents"]);
 requireUnique("verbSentences", "the verb and answer", (r) => r.v + ":" + r.a);
 requireBlank("verbSentences", (r) => r.sents);
 
+requireFields("preteriteStems", ["v", "stem", "f", "n"]);
+requireUnique("preteriteStems", "the verb", (r) => r.v);
+(MX.preteriteStems || []).forEach((r, i) => {
+  const forms = String(r.f).split(",").map((f) => f.trim());
+  if (forms.length !== 5) fail("preteriteStems", `entry ${i} ("${r.v}") lists ${forms.length} forms; Mexico uses five (no vosotros)`);
+  /* the whole point of the group is that none of them takes an accent */
+  for (const form of forms) {
+    if (/[áéíóú]/.test(form)) fail("preteriteStems", `"${form}" carries a written accent; strong preterites do not`);
+  }
+});
+requireFields("preteriteSentences", ["v", "p", "a", "sents"]);
+requireUnique("preteriteSentences", "the verb and answer", (r) => r.v + ":" + r.a);
+requireBlank("preteriteSentences", (r) => r.sents);
+/* every drilled answer has to be a form the stem table actually lists */
+{
+  const byVerb = new Map((MX.preteriteStems || []).map((r) => [r.v, String(r.f).split(",").map((f) => f.trim())]));
+  (MX.preteriteSentences || []).forEach((r, i) => {
+    const forms = byVerb.get(r.v);
+    if (!forms) { fail("preteriteSentences", `entry ${i} drills "${r.v}", which has no row in preteriteStems`); return; }
+    if (!forms.includes(r.a)) fail("preteriteSentences", `entry ${i} answers "${r.a}", which is not among ${r.v}'s forms (${forms.join(", ")})`);
+  });
+}
+
 requireFields("periphrasis", ["p", "m", "ex", "t", "note"], { min: 4 });
 requireUnique("periphrasis", "the pattern", (r) => r.p);
 checkConf("periphrasis", (r) => r.p);
@@ -216,7 +239,7 @@ requireFields("ruleSubjunctiveForms", ["v", "a", "why"]);
 requireUnique("ruleSubjunctiveForms", "the verb", (r) => r.v);
 
 /* These two supply their own options, so the answer has to be among them. */
-for (const name of ["ruleFacts", "ruleSubjunctive"]) {
+for (const name of ["ruleFacts", "ruleSubjunctive", "rulePreterite"]) {
   requireFields(name, ["q", "sub", "a", "opts", "why"]);
   requireUnique(name, "the prompt", (r) => r.q);
   (MX[name] || []).forEach((r, i) => {
