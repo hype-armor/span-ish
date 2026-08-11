@@ -107,14 +107,17 @@ const srs = load("src/lib/srs.js");
 
 {
   const first = srs.record(null, true, 0);
-  check("a first correct answer waits one day", first.interval, 1);
-  check("  and is due a day out", first.due, srs.DAY);
+  check("a first correct answer waits three days", first.interval, 3);
+  check("  and is due three days out", first.due, 3 * srs.DAY);
 
   const second = srs.record(first, true, 0);
-  check("a second correct answer waits three days", second.interval, 3);
+  check("a second correct answer waits eight days", second.interval, 8);
 
   const third = srs.record(second, true, 0);
-  check("after that the interval scales by ease", third.interval, Math.round(3 * second.ease));
+  check("after that the interval scales by ease", third.interval, Math.round(8 * second.ease));
+
+  /* The ladder has to keep climbing, or long-term items never rest. */
+  check("intervals grow", first.interval < second.interval && second.interval < third.interval, true);
 
   const missed = srs.record(third, false, 1000);
   check("a miss resets the interval", missed.interval, 0);
@@ -126,8 +129,8 @@ const srs = load("src/lib/srs.js");
 {
   check("an unseen item is not due in the future", srs.isDue(undefined, 0), true);
   const item = srs.record(null, true, 0);
-  check("a scheduled item is not due before its date", srs.isDue(item, srs.DAY - 1), false);
-  check("  and is due on it", srs.isDue(item, srs.DAY), true);
+  check("a scheduled item is not due before its date", srs.isDue(item, 3 * srs.DAY - 1), false);
+  check("  and is due on it", srs.isDue(item, 3 * srs.DAY), true);
 }
 
 {

@@ -10,8 +10,14 @@ export const DAY = 864e5;
 const EASE_START = 2.4;
 const EASE_MIN = 1.3;
 const EASE_MAX = 2.9;
-const FIRST_INTERVAL = 1; // days, after the first correct answer
-const SECOND_INTERVAL = 3; // days, after the second
+/* The first gap matters more than any later one (Karpicke & Roediger, 2007),
+   and the optimal gap is a fraction of the retention you want — roughly 20% at
+   a few weeks, less further out (Cepeda et al., 2008). Against a target of
+   months, 1 day was far too short. These assume study roughly three times a
+   week, so 3 days lands on the next session and 8 on the third or fourth.
+   See docs/learning-design.md before changing them. */
+const FIRST_INTERVAL = 3; // days, after the first correct answer
+const SECOND_INTERVAL = 8; // days, after the second
 
 export function blank() {
   return { right: 0, wrong: 0, streak: 0, ease: EASE_START, interval: 0, due: 0, last: 0, lapses: 0 };

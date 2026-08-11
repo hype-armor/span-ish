@@ -16,7 +16,7 @@ const ROOT = path.join(__dirname, "..");
 const CONTENT = path.join(ROOT, "content");
 
 /* Load in the same order index.html does, so "later file wins" matches reality. */
-const ORDER = ["suffixes", "sound", "verbs", "preterite", "imperfect", "tenses", "subjunctive", "subjunctive-past", "gender", "mexicanismos", "connectors", "rules"];
+const ORDER = ["suffixes", "sound", "listening", "verbs", "preterite", "imperfect", "tenses", "subjunctive", "subjunctive-past", "gender", "mexicanismos", "connectors", "rules"];
 
 let failures = 0;
 const fail = (where, msg) => { console.error(`  ✗ ${where}: ${msg}`); failures++; };
@@ -157,6 +157,14 @@ requireFields("stressRules", ["cond", "rule", "ex"], { min: 3 });
 requireUnique("stressRules", "the condition", (r) => r.cond);
 requireFields("dictation", ["w", "hint"]);
 requireUnique("dictation", "the word", (r) => r.w);
+
+requireFields("sentenceDictation", ["s", "t", "hint"]);
+requireUnique("sentenceDictation", "the sentence", (r) => r.s);
+(MX.sentenceDictation || []).forEach((r, i) => {
+  /* These are heard and written back whole, so a blank would be unanswerable. */
+  if (String(r.s).includes("___")) fail("sentenceDictation", `entry ${i} contains a ___ blank; these are written out in full`);
+  if (!/\s/.test(String(r.s).trim())) fail("sentenceDictation", `entry ${i} ("${r.s}") is a single word; sound.js dictation covers those`);
+});
 
 requireFields("irregularVerbs", ["v", "m", "yo", "g", "f"]);
 requireUnique("irregularVerbs", "the infinitive", (r) => r.v);

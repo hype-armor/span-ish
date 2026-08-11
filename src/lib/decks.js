@@ -140,7 +140,7 @@ function suffixDeck() {
 }
 
 function soundDeck() {
-  const { vowels, consonants, xSounds, stressRules, dictation } = content;
+  const { vowels, consonants, xSounds, stressRules, dictation, sentenceDictation } = content;
 
   const vowelCards = vowels.map((v) => ({
     id: "vow:" + v.l, kind: "mc", mod: "sound",
@@ -176,7 +176,16 @@ function soundDeck() {
     audio: d.w, a: d.w, canon: d.w, why: d.hint + ".",
   }));
 
-  return [...vowelCards, ...consonantCards, ...xCards, ...stressCards, ...dictationCards];
+  /* The same grading as the word dictation, on connected speech — which is
+     where listening actually breaks down. */
+  const sentenceCards = sentenceDictation.map((d) => ({
+    id: "dics:" + d.s, kind: "type", mod: "sound", listen: true, strict: true,
+    q: "", sub: "Listen, then write the whole sentence",
+    audio: d.s, a: d.s, canon: d.s,
+    why: `${d.t} — ${d.hint}.`,
+  }));
+
+  return [...vowelCards, ...consonantCards, ...xCards, ...stressCards, ...dictationCards, ...sentenceCards];
 }
 
 function verbsDeck() {

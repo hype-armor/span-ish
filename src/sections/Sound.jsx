@@ -9,8 +9,9 @@ export function SoundTab({ progress, record, speak }) {
       <h2>Learn it once, then stop thinking about it</h2>
       <p className="lede">
         Spanish spelling is fully phonetic: five vowel sounds, no reduction, no schwa, no silent
-        endings. The drill runs both directions — rules about letters, and dictation where a word
-        plays and you spell it. Dictation is the half that trains your ears.
+        endings. The drill runs both directions — rules about letters, and dictation where audio
+        plays and you write it down. Dictation is the half that trains your ears, and it works up
+        from single words to whole sentences, which is where speech actually runs together.
       </p>
 
       <h3>The five vowels</h3>
