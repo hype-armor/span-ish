@@ -107,14 +107,17 @@ const srs = load("src/lib/srs.js");
 
 {
   const first = srs.record(null, true, 0);
-  check("a first correct answer waits one day", first.interval, 1);
-  check("  and is due a day out", first.due, srs.DAY);
+  check("a first correct answer waits three days", first.interval, 3);
+  check("  and is due three days out", first.due, 3 * srs.DAY);
 
   const second = srs.record(first, true, 0);
-  check("a second correct answer waits three days", second.interval, 3);
+  check("a second correct answer waits eight days", second.interval, 8);
 
   const third = srs.record(second, true, 0);
-  check("after that the interval scales by ease", third.interval, Math.round(3 * second.ease));
+  check("after that the interval scales by ease", third.interval, Math.round(8 * second.ease));
+
+  /* The ladder has to keep climbing, or long-term items never rest. */
+  check("intervals grow", first.interval < second.interval && second.interval < third.interval, true);
 
   const missed = srs.record(third, false, 1000);
   check("a miss resets the interval", missed.interval, 0);
@@ -126,8 +129,38 @@ const srs = load("src/lib/srs.js");
 {
   check("an unseen item is not due in the future", srs.isDue(undefined, 0), true);
   const item = srs.record(null, true, 0);
-  check("a scheduled item is not due before its date", srs.isDue(item, srs.DAY - 1), false);
-  check("  and is due on it", srs.isDue(item, srs.DAY), true);
+  check("a scheduled item is not due before its date", srs.isDue(item, 3 * srs.DAY - 1), false);
+  check("  and is due on it", srs.isDue(item, 3 * srs.DAY), true);
+}
+
+/* ---------- review bands: what makes the schedule measurable ---------- */
+
+{
+  check("a card never seen is 'new'", srs.bandFor(null), "new");
+  check("  and so is one with no answers yet", srs.bandFor(item()), "new");
+  check("a card sitting at zero after a miss is 'relearning'",
+    srs.bandFor(item({ right: 2, wrong: 1, interval: 0 })), "relearning");
+  check("the first real interval lands in 1-3", srs.bandFor(item({ right: 1, interval: 3 })), "1-3");
+  check("the second lands in 4-9", srs.bandFor(item({ right: 2, interval: 8 })), "4-9");
+  check("a long interval lands in 30+", srs.bandFor(item({ right: 5, interval: 46 })), "30+");
+
+  /* the band is taken from the interval that elapsed, not the one just set */
+  let reviews = {};
+  reviews = srs.tallyReview(reviews, item({ right: 1, interval: 3 }), true);
+  reviews = srs.tallyReview(reviews, item({ right: 1, interval: 3 }), false);
+  reviews = srs.tallyReview(reviews, null, true);
+  check("tallies land in the right bands", reviews, { "1-3": { right: 1, wrong: 1 }, new: { right: 1, wrong: 0 } });
+}
+
+{
+  /* review tallies survive a merge, and merging twice still changes nothing */
+  const mine = { scores: {}, items: {}, reviews: { "1-3": { right: 10, wrong: 2 } } };
+  const theirs = { scores: {}, items: {}, reviews: { "1-3": { right: 4, wrong: 5 }, "4-9": { right: 7, wrong: 1 } } };
+  const once = mergeProgress(mine, theirs).progress;
+  check("merged bands keep the larger side", once.reviews["1-3"], { right: 10, wrong: 5 });
+  check("  and pick up bands only the other side had", once.reviews["4-9"], { right: 7, wrong: 1 });
+  const twice = mergeProgress(once, theirs).progress;
+  check("merging bands twice is the same as once", twice.reviews, once.reviews);
 }
 
 {

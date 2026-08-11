@@ -32,5 +32,11 @@ export function normalise(saved) {
   const shaped = saved && (saved.items || saved.scores) ? saved : { scores: saved || {}, items: {} };
   const items = {};
   for (const [id, raw] of Object.entries(shaped.items || {})) items[id] = normaliseItem(raw);
-  return { scores: shaped.scores || {}, items };
+
+  /* Added later than the rest, so older saves simply have none. */
+  const reviews = {};
+  for (const [band, raw] of Object.entries(shaped.reviews || {})) {
+    reviews[band] = { right: Number(raw.right) || 0, wrong: Number(raw.wrong) || 0 };
+  }
+  return { scores: shaped.scores || {}, items, reviews };
 }

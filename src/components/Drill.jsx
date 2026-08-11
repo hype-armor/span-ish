@@ -9,9 +9,11 @@ const BLANK = "⌷";
 
 /* One round of cards for one module.
  *
- * A missed card is pushed back onto the end of the round as a retry. Retries
- * are shown and scored on screen but excluded from what gets recorded, so
- * seeing a card twice in one sitting cannot inflate its review history. */
+ * A missed card is not shown again this round. Re-testing within a session is
+ * massed practice: it produces a success drawn from short-term memory, which
+ * mostly inflates your sense of knowing. The value of the miss was already
+ * taken at the moment of feedback, and a miss sets the card due immediately,
+ * so it returns in the next session anyway. See docs/learning-design.md. */
 export function Drill({ mod, label, progress, record, speak, count }) {
   const size = count || 10;
   const freshRound = () => buildRound(cardsFor(mod), size, progress.items, Date.now());
@@ -32,8 +34,7 @@ export function Drill({ mod, label, progress, record, speak, count }) {
   const score = progress.scores[mod];
   const history = card ? progress.items[card.id] : null;
 
-  const counted = results.filter((r) => !r.retry);
-  const rightSoFar = counted.filter((r) => r.right).length;
+  const rightSoFar = results.filter((r) => r.right).length;
 
   /* Captured before the round is recorded, so the results screen can say
      whether this round beat the previous best. */
@@ -52,11 +53,7 @@ export function Drill({ mod, label, progress, record, speak, count }) {
   const settle = useCallback(
     (right, given) => {
       setVerdict(right ? "right" : "wrong");
-      setResults((prev) => [
-        ...prev,
-        { id: card.id, right, canon: card.canon || card.a, given, retry: !!card.retry },
-      ]);
-      if (!right && !card.retry) setRound((prev) => [...prev, { ...card, retry: true }]);
+      setResults((prev) => [...prev, { id: card.id, right, canon: card.canon || card.a, given }]);
     },
     [card],
   );
@@ -76,7 +73,7 @@ export function Drill({ mod, label, progress, record, speak, count }) {
     if (index + 1 >= round.length) {
       if (!recorded.current) {
         recorded.current = true;
-        record(mod, results.filter((r) => !r.retry));
+        record(mod, results);
       }
       setDone(true);
       return;
@@ -140,7 +137,7 @@ export function Drill({ mod, label, progress, record, speak, count }) {
 
   if (done) {
     return (
-      <Results label={label} results={counted} total={counted.length} best={bestBefore.current} onRestart={restart} />
+      <Results label={label} results={results} total={results.length} best={bestBefore.current} onRestart={restart} />
     );
   }
   if (!card) return null;
@@ -276,11 +273,9 @@ export function Drill({ mod, label, progress, record, speak, count }) {
             <div className="why">{card.why}</div>
 
             <div className="sched">
-              {card.retry
-                ? "The earlier miss stands — this one is due again today"
-                : verdict === "right"
-                  ? `Scheduled again in ${nextIn}${nextIn === 1 ? " day" : " days"}`
-                  : "Back again before this round ends"}
+              {verdict === "right"
+                ? `Scheduled again in ${nextIn}${nextIn === 1 ? " day" : " days"}`
+                : "Due again in your next session"}
             </div>
 
             <div className="actions">
@@ -296,7 +291,6 @@ export function Drill({ mod, label, progress, record, speak, count }) {
 }
 
 function statusPill(card, history) {
-  if (card.retry) return <span className="pill pill-acc">Second look</span>;
   if (!history) return <span className="pill pill-good">New</span>;
   if (history.streak === 0 && history.wrong > 0) return <span className="pill pill-bad">Missed before</span>;
   if (isDue(history, Date.now())) return <span className="pill pill-pri">Due for review</span>;

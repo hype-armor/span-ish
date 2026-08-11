@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "./react.js";
 import { useSpeech } from "./lib/speech.js";
-import { record as recordItem, summarise } from "./lib/srs.js";
+import { record as recordItem, summarise, tallyReview } from "./lib/srs.js";
 import { ALL_IDS, ALL_ID_SET } from "./lib/decks.js";
 import { normalise } from "./lib/progress.js";
 import { PROGRESS_KEYS, THEME_KEYS, readFirst } from "./lib/storage.js";
@@ -94,7 +94,7 @@ export function App() {
     }
   };
 
-  /* Called once per finished round with the non-retry answers. */
+  /* Called once per finished round with that round's answers. */
   const record = useCallback((mod, answers) => {
     if (!answers.length) return;
     const now = Date.now();
@@ -104,13 +104,20 @@ export function App() {
     setProgress((prev) => {
       const score = prev.scores[mod] || { right: 0, total: 0, best: 0 };
       const items = { ...prev.items };
-      for (const answer of answers) items[answer.id] = recordItem(items[answer.id], answer.right, now);
+      let reviews = prev.reviews || {};
+      for (const answer of answers) {
+        /* Tally against the item as it stands *before* the update, since the
+           question is how the interval that just elapsed performed. */
+        reviews = tallyReview(reviews, items[answer.id], answer.right);
+        items[answer.id] = recordItem(items[answer.id], answer.right, now);
+      }
       return {
         scores: {
           ...prev.scores,
           [mod]: { right: score.right + right, total: score.total + answers.length, best: Math.max(score.best, percent) },
         },
         items,
+        reviews,
       };
     });
   }, []);

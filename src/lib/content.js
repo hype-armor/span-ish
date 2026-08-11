@@ -11,6 +11,7 @@ export const consonants = MX.consonants;
 export const xSounds = MX.xSounds;
 export const stressRules = MX.stressRules;
 export const dictation = MX.dictation;
+export const sentenceDictation = MX.sentenceDictation;
 
 export const irregularVerbs = MX.irregularVerbs;
 export const verbSentences = MX.verbSentences;

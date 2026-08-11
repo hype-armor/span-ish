@@ -13,12 +13,12 @@ Numbers below come from `npm run stats`, which reads the real decks. Re-run it
 rather than trusting the snapshot; it moves whenever content is added.
 
 ```
-total cards            384
-  typed production     195 (51%)
-  multiple choice      189 (49%)
+total cards            398
+  typed production     209 (53%)
+  multiple choice      189 (47%)
     of those, binary   106 (56% of choice cards)
-  practised in context 107 (28%)
-  listening             16 (4%)
+  practised in context 107 (27%)
+  listening             30 (8%)
 ```
 *(snapshot: August 2026)*
 
@@ -32,14 +32,14 @@ The testing effect is the best-replicated finding in this literature: being
 asked to produce an answer beats re-studying the same material, and the gap
 widens as the delay grows (Roediger & Karpicke, 2006).
 
-**In the app:** all 384 cards are retrieval events. The reference tables above
+**In the app:** every card is a retrieval event. The reference tables above
 each drill exist to be read once; nothing in the scheduler ever re-presents
 material for study. `src/components/Drill.jsx` has no "show me this again"
 path — only answer, feedback, advance.
 
 **Do not** add a card format that shows the answer before asking for it.
 
-### 2. Items are scheduled individually, by decay
+### 2. Items are scheduled individually, by decay, and the schedule is measured
 
 Distributed practice beats massed practice across 839 assessments in 317
 experiments (Cepeda, Pashler, Vul, Wixted & Rohrer, 2006). The interval that
@@ -49,6 +49,13 @@ maximises retention grows with the delay you are aiming at.
 A round is drawn by weighted sampling on how overdue each item is, with 40% of
 each round reserved for unseen material so a backlog cannot crowd out new
 content.
+
+Because the right intervals cannot be read off the literature, the app also
+records how each one performs: `tallyReview` files every answer into a band by
+the interval that preceded it, and the Review tab reports success rate per band.
+Bands rather than a log of every review — bounded, aggregatable, and it survives
+export and merge. Merging takes the larger side per band rather than the sum, so
+that merging the same export twice stays a no-op.
 
 ### 3. The Review deck interleaves, and distractors are always real
 
@@ -91,16 +98,18 @@ retention three days later than multiple choice, and that feedback helped the
 short-answer condition more. Multiple choice still beats no testing at all — it
 is the weaker tool, not a useless one.
 
-**In the app:** 51% of cards are typed. Answers are graded loosely (accents
-forgiven) except dictation, where spelling is the point.
+**In the app:** slightly over half the cards are typed (`npm run stats` for the
+current split). Answers are graded loosely — accents forgiven — except dictation,
+where `strict` keeps the ñ required.
 
 ### 6. Practise in the shape you will use it
 
 Verbs are drilled inside sentences with a blank rather than as bare paradigms,
 so the retrieval cue resembles the situation the knowledge is for.
 
-**In the app:** 28% of cards are a blank in a sentence. Every such card carries a
-translation, and the explanation shows the completed sentence.
+**In the app:** roughly a quarter of cards are a blank inside a sentence
+(`npm run stats`). Every such card carries a translation, and the explanation
+shows the completed sentence.
 
 ### 7. Rules first, then application
 
@@ -112,7 +121,7 @@ rule and apply it in a single step, which loads two things at once.
 
 ## Known divergences
 
-### The first interval is probably too short — and it is the one that matters
+### The first interval — set deliberately, still provisional
 
 Cepeda, Vul, Rohrer, Wixted & Pashler (2008) mapped the optimal gap against the
 retention interval: about **20% of the target delay** when that delay is a few
@@ -124,47 +133,61 @@ equal-interval ones on an immediate test but *lost* to them two days later, and
 concluded that **the placement of the first retrieval attempt mattered more than
 the relative spacing of later ones**.
 
-**Current values** (`src/lib/srs.js`): first interval 1 day, second 3 days, then
-`interval × ease` with ease starting at 2.4 (range 1.3–2.9, +0.06 per hit,
-−0.22 per miss).
+**Current values** (`src/lib/srs.js`): first interval **3 days**, second **8
+days**, then `interval × ease` with ease starting at 2.4 (range 1.3–2.9, +0.06
+per hit, −0.22 per miss).
 
-Two consequences worth acting on:
+These were 1 and 3 days. They were raised for a learner studying roughly three
+times a week: at that rhythm a 1-day interval collapses to whenever the next
+session happens anyway, so it was doing even less than it looked. 3 days lands on
+the following session and 8 on the third or fourth.
 
-- The 1-day first interval is the single highest-leverage parameter here, and it
-  is short. Lengthening it is a one-line change.
-- The ease machinery is inherited SM-2 shape and carries more apparent precision
-  than the evidence supports. It is not harmful; it is simply not the thing to
-  tune first.
+They remain **shorter than the ridgeline suggests** — against a six-month target
+it would put the first gap nearer two weeks. That is deliberate. Cepeda's items
+were learned to criterion before the gap started; these are seen once, and a
+fortnight on a once-seen card risks forgetting it completely rather than
+recalling it with effort. The current values are a step toward the evidence, not
+an arrival at it.
+
+The ease machinery is inherited SM-2 shape and carries more apparent precision
+than the evidence supports. It is not harmful, and it is not the thing to tune
+next — the first interval is.
 
 **Do not tune these from the literature alone.** The right values depend on the
-retention target and on session frequency, neither of which is known yet. See
-Open questions.
+retention target, which is still unstated. See Open questions.
 
-### The in-session retry is massed practice
+### The in-session retry — removed
 
-A missed card is appended to the same round. Within-session repetition produces
-fluency that does not survive to the next session — it is the classic case
-against massing.
+A missed card used to be appended to the same round. That is massed practice: the
+second attempt is answered out of short-term memory, so it mostly inflates the
+sense of knowing. The value of a miss is taken at the moment of feedback
+(Kornell, Hays & Bjork, 2009), and a miss already sets `due = now`, so the card
+returns in the next session regardless — the repeat was close to redundant.
 
-Two mitigations are already in place: retries are excluded from what gets
-recorded (`src/components/Drill.jsx`, the `retry` flag), and a miss already sets
-`due = now`, so the scheduler brings the card back regardless. That makes the
-in-session repeat close to redundant.
-
-**Status:** a known compromise, kept for the feeling of resolution within a
-session. Removing it is the cheapest evidence-aligned change available, because
-it means deleting behaviour rather than adding it.
+**Status:** removed. A round now ends with a miss unresolved, which feels worse
+and is meant to. If it makes sessions demoralising in practice, the answer is not
+to restore the retry but to look at round size.
 
 ### Half the cards are recognition
 
-49% multiple choice. This is defensible where the construct genuinely is a
-two-way discrimination — `el`/`la`, subjunctive/indicative, preterite/imperfect —
-and 56% of the choice cards are exactly that. It is weaker for cards where
+Just under half the cards are multiple choice. This is defensible where the
+construct genuinely is a two-way discrimination — `el`/`la`, subjunctive/indicative, preterite/imperfect —
+and a majority of the choice cards are exactly that. It is weaker for cards where
 typing was available, such as the verb-paradigm cards on the Rules deck
 ("Which endings?").
 
-**Status:** partly principled, partly convenience. Converting the paradigm cards
-to typed would move perhaps 9 cards from the weaker format to the stronger one.
+**Status:** partly principled, partly convenience.
+
+An earlier draft of this document recommended converting the paradigm cards to
+typed. **That recommendation was wrong and has been withdrawn.** The answers are
+strings like `-o, -as, -a, -amos, -an`, and the normaliser in `src/lib/text.js`
+strips commas but not hyphens — so a learner who knows the paradigm and types
+`o as a amos an` is marked wrong. That is a false negative on an easy card, which
+is worse than the recognition format it was meant to replace.
+
+The version worth doing instead is to **add** single-form typed cards — "nosotros
+preterite of hablar" → `hablamos` — which buys the production benefit without the
+punctuation trap. Not yet implemented.
 
 ### Nothing above a single blank
 
@@ -172,11 +195,19 @@ No card asks for a whole sentence. The gap between recognising `tuviera` and
 constructing a sentence around it is real, and the app currently does not cross
 it.
 
-### Listening is 16 single words
+### Listening is thin, but no longer word-only
 
-4% of cards, all isolated words. Connected speech is where comprehension
-actually fails, and it is untouched. The 118 example sentences already carry
-audio, so the raw material for sentence dictation exists.
+8% of cards. `content/sound.js` holds 16 single words; `content/listening.js`
+adds 14 sentences, each chosen to carry a feature the Sound tab teaches — silent
+h, the j rasp, ll, ñ, trilled rr, x — inside ordinary speech rather than a
+demonstration.
+
+Both are graded with `strict`, which in this app means accents forgiven and ñ
+required. Demanding every accent on a whole sentence would turn a listening
+exercise into a spelling test.
+
+**Still thin.** Fourteen sentences is a start on connected speech, not coverage
+of it.
 
 ### This is not a vocabulary programme
 
@@ -188,16 +219,34 @@ mistaken for coverage.
 
 ---
 
-## Open questions, answerable only with real usage
+## Open questions
 
-1. **Do reviews arrive too often?** If the daily due count feels punishing, the
-   first interval is too short. Raise `FIRST_INTERVAL` before touching ease.
+The first of these is now measured rather than guessed at. **Review → How the
+schedule is doing** files every answer under the interval that preceded it, so
+success rate can be read against gap length instead of against impressions.
+Read a row only once it has twenty or so answers behind it (`MIN_REVIEWS_TO_READ`).
+
+Roughly 85–90% held at a given interval is the target. Materially above that and
+the gap is shorter than it needs to be — you are paying in reviews for retention
+you already had. Materially below and the material is decaying before it comes
+back.
+
+1. **Are 3 and 8 days right?** Read the `1–3 days` and `4–9 days` rows. If both
+   sit well above 90%, lengthen `FIRST_INTERVAL` and `SECOND_INTERVAL`. If
+   `4–9 days` falls away while `1–3 days` holds, the second interval is reaching
+   too far. Change one at a time, and give it a few weeks — that is roughly how
+   long it takes for a band to gather enough answers to mean anything.
 2. **Is 40% new material per round right?** (`buildRound` in `src/lib/srs.js`.)
    Too high and the backlog never clears; too low and new content stalls.
-3. **Does the in-session retry help or just feel good?** Removing it and
-   comparing next-day accuracy would settle it.
+3. **Did removing the retry hurt motivation?** The evidence says the repeat was
+   not teaching much. Whether rounds now end too bleakly is a question only use
+   can answer.
 4. **Are the loose-grading rules too forgiving?** Accents are forgiven outside
    dictation. That is a deliberate trade of orthographic precision for flow.
+5. **Which cards are badly written?** The same panel lists items missed three
+   times or more. A card that keeps coming back is more often ambiguous, or has
+   a wrong answer that is actually defensible, than genuinely hard. Treat it as
+   a list of content to review.
 
 ---
 

@@ -10,8 +10,14 @@ export const DAY = 864e5;
 const EASE_START = 2.4;
 const EASE_MIN = 1.3;
 const EASE_MAX = 2.9;
-const FIRST_INTERVAL = 1; // days, after the first correct answer
-const SECOND_INTERVAL = 3; // days, after the second
+/* The first gap matters more than any later one (Karpicke & Roediger, 2007),
+   and the optimal gap is a fraction of the retention you want — roughly 20% at
+   a few weeks, less further out (Cepeda et al., 2008). Against a target of
+   months, 1 day was far too short. These assume study roughly three times a
+   week, so 3 days lands on the next session and 8 on the third or fourth.
+   See docs/learning-design.md before changing them. */
+const FIRST_INTERVAL = 3; // days, after the first correct answer
+const SECOND_INTERVAL = 8; // days, after the second
 
 export function blank() {
   return { right: 0, wrong: 0, streak: 0, ease: EASE_START, interval: 0, due: 0, last: 0, lapses: 0 };
@@ -97,6 +103,43 @@ export function buildRound(cards, size, items, now) {
     weighted.splice(hit, 1);
   }
   return round;
+}
+
+/* ---------- measuring whether the schedule is working ---------- */
+
+/* Reviews are tallied into bands by the interval that preceded them, so the
+   app can report success rate against interval length. That is what makes
+   "are 3 and 8 days right?" answerable rather than a matter of impression —
+   see the open questions in docs/learning-design.md.
+ *
+ * Bands rather than a log of every review: bounded in size, aggregatable, and
+ * it survives export and merge without growing forever. */
+export const REVIEW_BANDS = ["new", "relearning", "1-3", "4-9", "10-29", "30+"];
+
+/* Below this many answers a band's success rate is noise, and reading a
+   schedule change out of it would be worse than reading nothing. */
+export const MIN_REVIEWS_TO_READ = 20;
+
+export function bandFor(prev) {
+  /* A card seen for the first time, and a card that just lapsed back to zero,
+     are different situations even though both have interval 0. */
+  if (!prev || (prev.right || 0) + (prev.wrong || 0) === 0) return "new";
+  const days = prev.interval || 0;
+  if (days === 0) return "relearning";
+  if (days <= 3) return "1-3";
+  if (days <= 9) return "4-9";
+  if (days <= 29) return "10-29";
+  return "30+";
+}
+
+/* Call with the item as it was *before* the answer was recorded. */
+export function tallyReview(reviews, prev, correct) {
+  const band = bandFor(prev);
+  const at = reviews[band] || { right: 0, wrong: 0 };
+  return {
+    ...reviews,
+    [band]: { right: at.right + (correct ? 1 : 0), wrong: at.wrong + (correct ? 0 : 1) },
+  };
 }
 
 /* The counters on the Review tab. */

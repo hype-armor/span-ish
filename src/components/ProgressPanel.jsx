@@ -44,7 +44,11 @@ export function ProgressPanel({ progress, persist }) {
         lapses: Number(raw.lapses) || 0,
       };
     }
-    return { scores: parsed.scores || {}, items };
+    const reviews = {};
+    for (const [band, raw] of Object.entries(parsed.reviews || {})) {
+      reviews[band] = { right: Number(raw.right) || 0, wrong: Number(raw.wrong) || 0 };
+    }
+    return { scores: parsed.scores || {}, items, reviews };
   };
 
   const badPaste = () =>
@@ -76,7 +80,7 @@ export function ProgressPanel({ progress, persist }) {
 
   const reset = () => {
     if (!armed) { setArmed(true); setStatus(null); return; }
-    persist({ scores: {}, items: {} });
+    persist({ scores: {}, items: {}, reviews: {} });
     setArmed(false);
     setText("");
     setStatus({ ok: true, msg: "Cleared. Every item counts as unseen again." });
