@@ -35,7 +35,7 @@ function rulesDeck() {
   const {
     suffixes, genderEndings, ruleGenderExceptions, ruleVerbForms,
     ruleVerbEndings, ruleFacts, ruleSubjunctive, ruleSubjunctiveForms, ruleAccents,
-    rulePreterite, ruleImperfect,
+    rulePreterite, ruleImperfect, ruleImperfectSubjunctive,
   } = content;
 
   const suffixCards = suffixes.map((r) => {
@@ -100,6 +100,11 @@ function rulesDeck() {
     q: r.q, sub: r.sub, a: r.a, opts: shuffle(r.opts), why: r.why,
   }));
 
+  const imperfectSubjunctiveRuleCards = ruleImperfectSubjunctive.map((r) => ({
+    id: "rul:isj:" + r.q, kind: "mc", mod: "rules",
+    q: r.q, sub: r.sub, a: r.a, opts: shuffle(r.opts), why: r.why,
+  }));
+
   const subjunctiveFormCards = ruleSubjunctiveForms.map((r) => ({
     id: "rul:sf:" + r.v, kind: "type", mod: "rules",
     q: r.v, sub: "Type the yo present subjunctive",
@@ -116,7 +121,7 @@ function rulesDeck() {
   return [
     ...suffixCards, ...genderRuleCards, ...genderExceptionCards,
     ...verbFormCards, ...verbEndingCards, ...factCards, ...preteriteCards, ...imperfectRuleCards,
-    ...subjunctiveRuleCards, ...subjunctiveFormCards, ...accentCards,
+    ...subjunctiveRuleCards, ...subjunctiveFormCards, ...imperfectSubjunctiveRuleCards, ...accentCards,
   ];
 }
 
@@ -282,7 +287,42 @@ function subjunctiveDeck() {
     };
   });
 
-  return [...triggerCards, ...sentenceCards];
+  /* Built from the ellos preterite rather than restated: drop -ron, add -ra.
+     Doing it here means the strong stems can never drift out of step with
+     content/preterite.js. */
+  const fromPreterite = content.preteriteStems.map((v) => {
+    const ellos = v.f.split(",")[4].trim();
+    return { v: v.v, ellos, a: ellos.replace(/ron$/, "") + "ra" };
+  });
+
+  const formationCards = [...content.imperfectSubjunctiveRegular, ...fromPreterite].map((v) => ({
+    id: "isf:" + v.v, kind: "type", mod: "subjunctive",
+    q: v.v, sub: "Type the yo imperfect subjunctive",
+    a: v.a, canon: v.a, audio: v.a,
+    why: `${v.ellos} → drop -ron → ${v.a}. The ellos preterite is the whole recipe.`,
+  }));
+
+  /* The wrong answer is the conditional, because putting one after si is the
+     mistake people actually make. */
+  const siCards = content.siClauses.map((c) => ({
+    id: "si:" + c.id, kind: "mc", mod: "subjunctive",
+    q: c.s.replace("___", BLANK), sub: "Which form after si?",
+    a: c.sub, opts: shuffle([c.sub, c.cond]),
+    audio: c.s.replace("___", c.sub),
+    why: `${c.s.replace("___", c.sub)} — ${c.t} Si takes the subjunctive; the conditional belongs in the other half.`,
+  }));
+
+  /* Same triggers as above, pulled into the past. The wrong answer is the
+     present subjunctive. */
+  const backshiftCards = content.backshift.map((b) => ({
+    id: "bs:" + b.id, kind: "mc", mod: "subjunctive",
+    q: b.s.replace("___", BLANK), sub: `${b.trig} · the main verb is in the past`,
+    a: b.past, opts: shuffle([b.past, b.present]),
+    audio: b.s.replace("___", b.past),
+    why: `${b.s.replace("___", b.past)} — ${b.t} A past main verb pulls the subjunctive back with it.`,
+  }));
+
+  return [...triggerCards, ...sentenceCards, ...formationCards, ...siCards, ...backshiftCards];
 }
 
 function genderDeck() {

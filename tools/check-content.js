@@ -16,7 +16,7 @@ const ROOT = path.join(__dirname, "..");
 const CONTENT = path.join(ROOT, "content");
 
 /* Load in the same order index.html does, so "later file wins" matches reality. */
-const ORDER = ["suffixes", "sound", "verbs", "preterite", "imperfect", "tenses", "subjunctive", "gender", "mexicanismos", "connectors", "rules"];
+const ORDER = ["suffixes", "sound", "verbs", "preterite", "imperfect", "tenses", "subjunctive", "subjunctive-past", "gender", "mexicanismos", "connectors", "rules"];
 
 let failures = 0;
 const fail = (where, msg) => { console.error(`  ✗ ${where}: ${msg}`); failures++; };
@@ -234,6 +234,43 @@ requireBlank("subjunctiveSentences", (r) => r.sents);
   });
 });
 
+requireFields("imperfectSubjunctiveEndings", ["set", "ex", "n"]);
+requireUnique("imperfectSubjunctiveEndings", "the ending set", (r) => r.set);
+requireFields("imperfectSubjunctiveRegular", ["v", "ellos", "a"]);
+requireUnique("imperfectSubjunctiveRegular", "the verb", (r) => r.v);
+requireFields("imperfectSubjunctiveUses", ["use", "ex", "t", "n"]);
+requireUnique("imperfectSubjunctiveUses", "the situation", (r) => r.use);
+
+/* The drill derives these forms by dropping -ron off the ellos preterite, so
+   the derivation has to hold for every verb it is applied to. */
+(MX.preteriteStems || []).forEach((r) => {
+  const ellos = String(r.f).split(",")[4];
+  if (!ellos || !/ron\s*$/.test(ellos)) {
+    fail("preteriteStems", `${r.v}'s ellos form is "${(ellos || "").trim()}"; the imperfect subjunctive is built by dropping -ron, so it must end in -ron`);
+  }
+});
+(MX.imperfectSubjunctiveRegular || []).forEach((r, i) => {
+  if (!/ron$/.test(r.ellos)) fail("imperfectSubjunctiveRegular", `entry ${i} ("${r.v}") has ellos "${r.ellos}", which does not end in -ron`);
+  else if (r.ellos.replace(/ron$/, "") + "ra" !== r.a) {
+    fail("imperfectSubjunctiveRegular", `entry ${i} ("${r.v}") says ${r.a}, but ${r.ellos} minus -ron plus -ra is ${r.ellos.replace(/ron$/, "") + "ra"}`);
+  }
+});
+
+requireFields("siClauses", ["id", "s", "sub", "cond", "t"]);
+requireUnique("siClauses", "the id", (r) => r.id);
+(MX.siClauses || []).forEach((r, i) => {
+  if (!String(r.s).includes("___")) fail("siClauses", `entry ${i} has no ___ blank`);
+  if (!/\bsi\b/i.test(String(r.s))) fail("siClauses", `entry ${i} has no "si" in it, so it is not a si clause`);
+  if (r.sub === r.cond) fail("siClauses", `entry ${i} has identical options, so the card has no answer`);
+});
+
+requireFields("backshift", ["id", "trig", "s", "past", "present", "t"]);
+requireUnique("backshift", "the id", (r) => r.id);
+(MX.backshift || []).forEach((r, i) => {
+  if (!String(r.s).includes("___")) fail("backshift", `entry ${i} has no ___ blank`);
+  if (r.past === r.present) fail("backshift", `entry ${i} has identical options, so the card has no answer`);
+});
+
 requireFields("genderEndings", ["end", "g", "ex"]);
 requireUnique("genderEndings", "the ending", (r) => r.end);
 requireOneOf("genderEndings", "gender", ["f", "m"], (r) => r.g);
@@ -266,7 +303,7 @@ requireFields("ruleSubjunctiveForms", ["v", "a", "why"]);
 requireUnique("ruleSubjunctiveForms", "the verb", (r) => r.v);
 
 /* These two supply their own options, so the answer has to be among them. */
-for (const name of ["ruleFacts", "ruleSubjunctive", "rulePreterite", "ruleImperfect"]) {
+for (const name of ["ruleFacts", "ruleSubjunctive", "rulePreterite", "ruleImperfect", "ruleImperfectSubjunctive"]) {
   requireFields(name, ["q", "sub", "a", "opts", "why"]);
   requireUnique(name, "the prompt", (r) => r.q);
   (MX[name] || []).forEach((r, i) => {

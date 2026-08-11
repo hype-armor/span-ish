@@ -82,7 +82,7 @@ jobs:
 
       # The dev tooling is not part of the app and should not be served.
       - name: Drop dev-only files
-        run: rm -rf tools src package.json package-lock.json node_modules
+        run: rm -rf tools src docs package.json package-lock.json node_modules
 
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -9,7 +9,8 @@
     "smoke": "node tools/smoke.js",
     "test": "npm run build:check && npm run test:lib && npm run check && npm run smoke",
     "test:lib": "node tools/test-lib.js",
-    "visual": "node tools/visual-diff.js"
+    "visual": "node tools/visual-diff.js",
+    "stats": "node tools/deck-stats.js"
   },
   "devDependencies": {
     "esbuild": "^0.28.0",

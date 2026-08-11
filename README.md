@@ -15,6 +15,7 @@ An installable, offline-capable build of the Mexican Spanish drill app.
 | `manifest.webmanifest` | Name, icons, colours, and standalone display mode. |
 | `sw.js` | Service worker. Caches the shell so the app opens with no network. |
 | `icons/` | 192 / 512 / maskable / Apple touch icons, plus an SVG favicon. |
+| `docs/learning-design.md` | Why the app drills the way it does, and the research behind it. Read before changing drill mechanics. |
 
 Nothing is built at deploy time and nothing loads from a CDN: `app.js` is
 committed, so the site is served exactly as it sits in the repo. The content
@@ -31,6 +32,11 @@ npm test          # build is current + unit tests + content + smoke test
 
 CI fails if `app.js` does not match what `src/` builds to, so a stale bundle
 cannot reach the site.
+
+`npm run stats` prints the composition of the card set — how much is typed
+production versus recognition, how much is practised in context. `docs/learning-design.md`
+argues about those numbers, so re-run it after adding content rather than
+trusting the snapshot in the document.
 
 ### Checking a refactor changed nothing
 
@@ -66,6 +72,11 @@ window.MX.mexicanismos = [
   // add a line, reload, and it's in the rotation
 ];
 ```
+
+Before writing cards, skim the checklist at the end of
+[`docs/learning-design.md`](docs/learning-design.md) — particularly the part
+about distractors. A wrong answer you can rule out on sight makes the card free,
+and that is the easiest thing to get wrong.
 
 Two rules:
 
@@ -138,7 +149,7 @@ nothing survives a reload.
 
 ## Republishing
 
-Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v8"`) to a new value whenever
+Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v9"`) to a new value whenever
 you change anything the service worker caches. Without that bump, returning
 visitors keep getting the old shell.
 
