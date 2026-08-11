@@ -30,6 +30,13 @@ export const periphrasis = MX.periphrasis;
 export const subjunctiveTriggers = MX.subjunctiveTriggers;
 export const subjunctiveSentences = MX.subjunctiveSentences;
 
+export const imperfectSubjunctiveEndings = MX.imperfectSubjunctiveEndings;
+export const imperfectSubjunctiveRegular = MX.imperfectSubjunctiveRegular;
+export const imperfectSubjunctiveUses = MX.imperfectSubjunctiveUses;
+export const siClauses = MX.siClauses;
+export const backshift = MX.backshift;
+export const ruleImperfectSubjunctive = MX.ruleImperfectSubjunctive;
+
 export const genderEndings = MX.genderEndings;
 export const genderNouns = MX.genderNouns;
 export const genderExceptionTable = MX.genderExceptionTable;
