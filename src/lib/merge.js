@@ -32,6 +32,22 @@ function mergeScore(mine, theirs) {
   return { ...fuller, best: Math.max(mine.best || 0, theirs.best || 0) };
 }
 
+/* Band tallies take the larger side rather than the sum. Summing would be more
+   accurate when two devices genuinely reviewed different cards, but it would
+   also double-count anything merged twice — and merging being idempotent is a
+   property worth more here than exactness in the diagnostics. */
+function mergeReviews(mine = {}, theirs = {}) {
+  const out = { ...mine };
+  for (const [band, incoming] of Object.entries(theirs)) {
+    const here = out[band] || { right: 0, wrong: 0 };
+    out[band] = {
+      right: Math.max(here.right || 0, incoming.right || 0),
+      wrong: Math.max(here.wrong || 0, incoming.wrong || 0),
+    };
+  }
+  return out;
+}
+
 export function mergeProgress(mine, theirs) {
   const items = { ...mine.items };
   let added = 0;
@@ -48,5 +64,5 @@ export function mergeProgress(mine, theirs) {
     scores[mod] = mergeScore(scores[mod], incoming);
   }
 
-  return { progress: { scores, items }, added, updated };
+  return { progress: { scores, items, reviews: mergeReviews(mine.reviews, theirs.reviews) }, added, updated };
 }

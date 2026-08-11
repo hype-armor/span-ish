@@ -1,6 +1,7 @@
 import React from "../react.js";
 import { Drill } from "../components/Drill.jsx";
 import { ProgressPanel } from "../components/ProgressPanel.jsx";
+import { Diagnostics } from "../components/Diagnostics.jsx";
 
 export function ReviewTab({ progress, record, speak, persist, sum }) {
   return (
@@ -35,6 +36,7 @@ export function ReviewTab({ progress, record, speak, persist, sum }) {
       </div>
 
       <Drill mod="mixed" label="Mixed review" progress={progress} record={record} speak={speak} count={14} />
+      <Diagnostics progress={progress} />
       <ProgressPanel progress={progress} persist={persist} />
     </section>
   );

@@ -39,7 +39,7 @@ path — only answer, feedback, advance.
 
 **Do not** add a card format that shows the answer before asking for it.
 
-### 2. Items are scheduled individually, by decay
+### 2. Items are scheduled individually, by decay, and the schedule is measured
 
 Distributed practice beats massed practice across 839 assessments in 317
 experiments (Cepeda, Pashler, Vul, Wixted & Rohrer, 2006). The interval that
@@ -49,6 +49,13 @@ maximises retention grows with the delay you are aiming at.
 A round is drawn by weighted sampling on how overdue each item is, with 40% of
 each round reserved for unseen material so a backlog cannot crowd out new
 content.
+
+Because the right intervals cannot be read off the literature, the app also
+records how each one performs: `tallyReview` files every answer into a band by
+the interval that preceded it, and the Review tab reports success rate per band.
+Bands rather than a log of every review — bounded, aggregatable, and it survives
+export and merge. Merging takes the larger side per band rather than the sum, so
+that merging the same export twice stays a no-op.
 
 ### 3. The Review deck interleaves, and distractors are always real
 
@@ -212,12 +219,23 @@ mistaken for coverage.
 
 ---
 
-## Open questions, answerable only with real usage
+## Open questions
 
-1. **Are 3 and 8 days right?** They assume three sessions a week and a retention
-   target of months. If the due count feels punishing, they are still too short;
-   if cards feel completely cold on their first review, too long. Raise or lower
-   `FIRST_INTERVAL` before touching ease.
+The first of these is now measured rather than guessed at. **Review → How the
+schedule is doing** files every answer under the interval that preceded it, so
+success rate can be read against gap length instead of against impressions.
+Read a row only once it has twenty or so answers behind it (`MIN_REVIEWS_TO_READ`).
+
+Roughly 85–90% held at a given interval is the target. Materially above that and
+the gap is shorter than it needs to be — you are paying in reviews for retention
+you already had. Materially below and the material is decaying before it comes
+back.
+
+1. **Are 3 and 8 days right?** Read the `1–3 days` and `4–9 days` rows. If both
+   sit well above 90%, lengthen `FIRST_INTERVAL` and `SECOND_INTERVAL`. If
+   `4–9 days` falls away while `1–3 days` holds, the second interval is reaching
+   too far. Change one at a time, and give it a few weeks — that is roughly how
+   long it takes for a band to gather enough answers to mean anything.
 2. **Is 40% new material per round right?** (`buildRound` in `src/lib/srs.js`.)
    Too high and the backlog never clears; too low and new content stalls.
 3. **Did removing the retry hurt motivation?** The evidence says the repeat was
@@ -225,6 +243,10 @@ mistaken for coverage.
    can answer.
 4. **Are the loose-grading rules too forgiving?** Accents are forgiven outside
    dictation. That is a deliberate trade of orthographic precision for flow.
+5. **Which cards are badly written?** The same panel lists items missed three
+   times or more. A card that keeps coming back is more often ambiguous, or has
+   a wrong answer that is actually defensible, than genuinely hard. Treat it as
+   a list of content to review.
 
 ---
 

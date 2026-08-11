@@ -133,6 +133,36 @@ const srs = load("src/lib/srs.js");
   check("  and is due on it", srs.isDue(item, 3 * srs.DAY), true);
 }
 
+/* ---------- review bands: what makes the schedule measurable ---------- */
+
+{
+  check("a card never seen is 'new'", srs.bandFor(null), "new");
+  check("  and so is one with no answers yet", srs.bandFor(item()), "new");
+  check("a card sitting at zero after a miss is 'relearning'",
+    srs.bandFor(item({ right: 2, wrong: 1, interval: 0 })), "relearning");
+  check("the first real interval lands in 1-3", srs.bandFor(item({ right: 1, interval: 3 })), "1-3");
+  check("the second lands in 4-9", srs.bandFor(item({ right: 2, interval: 8 })), "4-9");
+  check("a long interval lands in 30+", srs.bandFor(item({ right: 5, interval: 46 })), "30+");
+
+  /* the band is taken from the interval that elapsed, not the one just set */
+  let reviews = {};
+  reviews = srs.tallyReview(reviews, item({ right: 1, interval: 3 }), true);
+  reviews = srs.tallyReview(reviews, item({ right: 1, interval: 3 }), false);
+  reviews = srs.tallyReview(reviews, null, true);
+  check("tallies land in the right bands", reviews, { "1-3": { right: 1, wrong: 1 }, new: { right: 1, wrong: 0 } });
+}
+
+{
+  /* review tallies survive a merge, and merging twice still changes nothing */
+  const mine = { scores: {}, items: {}, reviews: { "1-3": { right: 10, wrong: 2 } } };
+  const theirs = { scores: {}, items: {}, reviews: { "1-3": { right: 4, wrong: 5 }, "4-9": { right: 7, wrong: 1 } } };
+  const once = mergeProgress(mine, theirs).progress;
+  check("merged bands keep the larger side", once.reviews["1-3"], { right: 10, wrong: 5 });
+  check("  and pick up bands only the other side had", once.reviews["4-9"], { right: 7, wrong: 1 });
+  const twice = mergeProgress(once, theirs).progress;
+  check("merging bands twice is the same as once", twice.reviews, once.reviews);
+}
+
 {
   /* a round never repeats a card and never exceeds the size asked for */
   const cards = Array.from({ length: 40 }, (_, i) => ({ id: "c" + i }));
