@@ -174,5 +174,65 @@ const srs = load("src/lib/srs.js");
   check("a short deck yields what it has", small.length, 4);
 }
 
+/* ---------- the service worker's cache name ---------- */
+
+/* This is the one rule where being wrong is invisible: a cache name that fails
+   to move means users keep the old app forever and nothing anywhere errors.
+   So test that it moves for each way the shell can change, and that it holds
+   still otherwise — a name that churned on every build would evict the offline
+   cache for no reason. */
+{
+  const cn = require("./cache-name.js");
+
+  const fixture = (files) => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "mx-sw-"));
+    for (const [rel, body] of Object.entries(files)) {
+      fs.mkdirSync(path.join(dir, path.dirname(rel)), { recursive: true });
+      fs.writeFileSync(path.join(dir, rel), body);
+    }
+    return dir;
+  };
+  const SW = (shell) =>
+    `const CACHE = "placeholder";\nconst SHELL = [\n${shell.map((p) => `  "${p}",`).join("\n")}\n];\n`;
+
+  const files = { "index.html": "<h1>hi</h1>", "app.js": "one();", "notes.md": "not shipped" };
+  const shell = ["./", "./index.html", "./app.js"];
+
+  const dir = fixture({ ...files, "sw.js": SW(shell) });
+  const base = cn.cacheName(dir);
+
+  check('"./" and "./index.html" are one file, not two',
+    cn.shellFiles(SW(shell)), ["app.js", "index.html"]);
+  check("the same shell hashes the same way twice", cn.cacheName(dir), base);
+
+  fs.writeFileSync(path.join(dir, "notes.md"), "still not shipped, edited");
+  check("editing a file the shell does not cache leaves it alone", cn.cacheName(dir), base);
+
+  fs.writeFileSync(path.join(dir, "app.js"), "two();");
+  const edited = cn.cacheName(dir);
+  check("editing a cached file moves it", edited !== base, true);
+
+  /* Same bytes, different name: without the path in the hash this collides. */
+  const renamed = fixture({ "index.html": files["index.html"], "bundle.js": "two();",
+    "sw.js": SW(["./", "./index.html", "./bundle.js"]) });
+  check("renaming a cached file moves it", cn.cacheName(renamed) !== edited, true);
+
+  /* Dropping a file is a shell change too, and the easiest one to miss. */
+  const fewer = fixture({ "index.html": files["index.html"], "sw.js": SW(["./", "./index.html"]) });
+  check("dropping a file from the shell moves it", cn.cacheName(fewer) !== base, true);
+
+  const first = cn.writeCacheName(dir);
+  check("writing stamps the derived name", [first.name, first.changed], [edited, true]);
+  check("  and says so in sw.js", cn.currentCacheName(dir), edited);
+  check("writing again is a no-op", cn.writeCacheName(dir), { name: edited, changed: false });
+
+  const throws = (fn) => { try { fn(); return null; } catch (e) { return e.message; } };
+  const gone = fixture({ "sw.js": SW(["./index.html"]) });
+  check("a shell entry with no file behind it is an error",
+    throws(() => cn.cacheName(gone)), "sw.js caches ./index.html, which does not exist");
+  check("so is a sw.js with no SHELL list",
+    throws(() => cn.shellFiles('const CACHE = "x";')), "sw.js: could not find the SHELL list");
+}
+
 if (failures) { console.error(`\n${failures} failure${failures === 1 ? "" : "s"}`); process.exit(1); }
 console.log("\nlib OK");
