@@ -1,5 +1,5 @@
 import React, { useState } from "../react.js";
-import { Table, Speak } from "../components/bits.jsx";
+import { Table, Speak, Lede } from "../components/bits.jsx";
 import { Drill } from "../components/Drill.jsx";
 import {
   subjunctiveTriggers, imperfectSubjunctiveEndings, imperfectSubjunctiveUses,
@@ -22,11 +22,11 @@ export function SubjunctiveTab({ progress, record, speak }) {
   return (
     <section>
       <h2>Don't reason about mood. Match the phrase.</h2>
-      <p className="lede">
+      <Lede>
         Textbooks explain the subjunctive as doubt, emotion and unreality — true, and useless
         mid-sentence. In practice a fixed set of phrases forces it and everything else doesn't. Treat
         it as a lookup, and let the underlying logic arrive later.
-      </p>
+      </Lede>
 
       <div className="chips" style={{ marginBottom: 16 }}>
         {FILTERS.map(([id, label]) => (
@@ -50,18 +50,18 @@ export function SubjunctiveTab({ progress, record, speak }) {
         ))}
       </Table>
 
-      <p className="lede" style={{ marginTop: 20 }}>
+      <Lede style={{ marginTop: 20 }}>
         The logic underneath, once you want it: asserting something real takes the indicative, while
         wanting, doubting or projecting forward takes the subjunctive. Notice how<em> creo que</em> and <em>no creo que</em> flip on exactly that line — and that the drill's wrong answer is always
         the other real form, never something you could rule out on sight.
-      </p>
+      </Lede>
 
       <h2 style={{ marginTop: 44 }}>The same triggers, once the sentence is in the past</h2>
-      <p className="lede">
+      <Lede>
         Everything above is the present subjunctive. Move the main verb into the past and the
         subjunctive has to follow: <em>quiero que vengas</em> becomes <em>quería que vinieras</em>. The
         trigger list does not change — only the form does.
-      </p>
+      </Lede>
 
       <div className="card" style={{ marginTop: 10, borderLeft: "3px solid var(--accent)" }}>
         <div className="card-k">You already know how to build it</div>
@@ -115,12 +115,12 @@ export function SubjunctiveTab({ progress, record, speak }) {
         ))}
       </Table>
 
-      <p className="lede" style={{ marginTop: 20 }}>
+      <Lede style={{ marginTop: 20 }}>
         The one error worth burying is <em>si tendría</em>. Si takes the subjunctive and the other
         half takes the conditional — <em>si tuviera dinero, viajaría</em> — never the reverse, and
         never two conditionals. The drill below puts the conditional in as the wrong answer every
         time, because that is the mistake that actually gets made.
-      </p>
+      </Lede>
 
       <Drill mod="subjunctive" label="Triggers, sentences & si clauses" progress={progress} record={record} speak={speak} count={12} />
     </section>

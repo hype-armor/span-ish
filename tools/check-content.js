@@ -16,7 +16,17 @@ const ROOT = path.join(__dirname, "..");
 const CONTENT = path.join(ROOT, "content");
 
 /* Load in the same order index.html does, so "later file wins" matches reality. */
-const ORDER = ["suffixes", "sound", "listening", "verbs", "preterite", "imperfect", "tenses", "subjunctive", "subjunctive-past", "gender", "mexicanismos", "connectors", "rules"];
+const ORDER = ["glossary", "suffixes", "sound", "listening", "verbs", "preterite", "imperfect", "tenses", "subjunctive", "subjunctive-past", "gender", "mexicanismos", "connectors", "rules"];
+
+function walk(dir) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...walk(full));
+    else if (/\.jsx?$/.test(entry.name)) out.push(fs.readFileSync(full, "utf8"));
+  }
+  return out;
+}
 
 let failures = 0;
 const fail = (where, msg) => { console.error(`  ✗ ${where}: ${msg}`); failures++; };
@@ -128,6 +138,39 @@ function requireBlank(name, sentsFn) {
 }
 
 /* ---------- the decks ---------- */
+
+requireFields("glossary", ["term", "what"]);
+requireUnique("glossary", "the term", (r) => r.term);
+{
+  /* Every term and alias is matched against prose, so two entries claiming the
+     same word would make which definition opens arbitrary. */
+  const claimed = new Map();
+  (MX.glossary || []).forEach((r) => {
+    for (const word of [r.term, ...(r.also || [])]) {
+      const key = String(word).toLowerCase();
+      if (claimed.has(key) && claimed.get(key) !== r.term) {
+        fail("glossary", `"${word}" is claimed by both "${claimed.get(key)}" and "${r.term}"; matching would be arbitrary`);
+      }
+      claimed.set(key, r.term);
+      if (word !== key) fail("glossary", `"${word}" should be lowercase; matching is case-insensitive and the text's own casing is kept`);
+    }
+  });
+
+  /* A definition for a word the app never uses can never be opened.
+     glossary.js is excluded from the corpus on purpose: every term appears in
+     its own definition, so including it would make this check always pass. */
+  const prose = [
+    ...fs.readdirSync(CONTENT)
+      .filter((f) => f !== "glossary.js")
+      .map((f) => fs.readFileSync(path.join(CONTENT, f), "utf8")),
+    ...walk(path.join(ROOT, "src")),
+  ].join("\n").toLowerCase();
+  (MX.glossary || []).forEach((r) => {
+    const words = [r.term, ...(r.also || [])];
+    const used = words.some((w) => new RegExp(`\\b${String(w).toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(prose));
+    if (!used) fail("glossary", `"${r.term}" never appears in any prose or card text, so it can never be clicked`);
+  });
+}
 
 requireFields("suffixes", ["en", "es", "re", "tail", "ex", "note"]);
 requireUnique("suffixes", "the English ending", (r) => r.en);

@@ -1,5 +1,5 @@
 import React from "../react.js";
-import { Table, Speak } from "../components/bits.jsx";
+import { Table, Speak, Lede } from "../components/bits.jsx";
 import { Drill } from "../components/Drill.jsx";
 import { irregularVerbs } from "../lib/content.js";
 
@@ -7,12 +7,12 @@ export function VerbsTab({ progress, record, speak }) {
   return (
     <section>
       <h2>Irregularity is a finite list, not a condition</h2>
-      <p className="lede">
+      <Lede>
         Three ending tables cover every regular verb, and the irregulars are a closed set about this
         size. Nothing new joins it — verbs entering Spanish today are always regular -ar: googlear,
         tuitear, chatear. The drill asks you to produce forms inside sentences, and each verb has
         several, so the cue stays the verb rather than one memorized line.
-      </p>
+      </Lede>
 
       <div className="grid g3">
         <div className="card lift">

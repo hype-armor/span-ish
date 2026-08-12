@@ -1,5 +1,5 @@
 import React from "../react.js";
-import { Table, Speak } from "../components/bits.jsx";
+import { Table, Speak, Lede } from "../components/bits.jsx";
 import { Drill } from "../components/Drill.jsx";
 import { mexicanismos, diminutives } from "../lib/content.js";
 
@@ -7,11 +7,11 @@ export function MexicanismosTab({ progress, record, speak }) {
   return (
     <section>
       <h2>The words your textbook got wrong</h2>
-      <p className="lede">
+      <Lede>
         Most Spanish courses are written for Peninsular Spanish, so they teach vocabulary that marks
         you instantly in Mexico City. You'll be understood either way, but these are the swaps that
         matter — and one or two that avoid real embarrassment.
-      </p>
+      </Lede>
 
       <Table head={["Mexico", "Spain", "English", "Note"]}>
         {mexicanismos.map((w) => (
@@ -27,11 +27,11 @@ export function MexicanismosTab({ progress, record, speak }) {
       </Table>
 
       <h3>The diminutive is politeness, not size</h3>
-      <p className="lede">
+      <Lede>
         Mexican Spanish attaches -ito and -ita constantly, and it almost never means small. It softens
         a request, hedges a commitment, or warms up a sentence. Picking up the habit is one of the
         fastest ways to stop sounding blunt.
-      </p>
+      </Lede>
       <div className="grid g2">
         {diminutives.map(([word, gloss]) => (
           <div className="card lift" key={word}>

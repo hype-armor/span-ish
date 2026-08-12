@@ -1,5 +1,5 @@
 import React from "../react.js";
-import { Table, Speak } from "../components/bits.jsx";
+import { Table, Speak, Lede } from "../components/bits.jsx";
 import { Drill } from "../components/Drill.jsx";
 import { genderEndings, genderExceptionTable } from "../lib/content.js";
 
@@ -7,11 +7,11 @@ export function GenderTab({ progress, record, speak }) {
   return (
     <section>
       <h2>The ending tells you, nearly every time</h2>
-      <p className="lede">
+      <Lede>
         Gender gets taught as arbitrary and memorized word by word. It isn't. Eight endings settle the
         overwhelming majority of nouns, and the leftovers are a short famous list worth learning as a
         group.
-      </p>
+      </Lede>
 
       <div className="grid g2">
         {genderEndings.map((e) => (

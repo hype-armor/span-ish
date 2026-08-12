@@ -1,4 +1,5 @@
 import React from "../react.js";
+import { Glossed } from "./Glossary.jsx";
 
 /* The little ▶ next to a word in a reference table. */
 export function Speak({ text, speak, label }) {
@@ -18,5 +19,16 @@ export function Table({ head, children }) {
         <tbody>{children}</tbody>
       </table>
     </div>
+  );
+}
+
+/* Every explanatory paragraph in the app. Routing them through one component
+   means a grammar word is clickable wherever it appears, rather than only where
+   someone remembered to mark it up. */
+export function Lede({ children, style }) {
+  return (
+    <p className="lede" style={style}>
+      <Glossed>{children}</Glossed>
+    </p>
   );
 }

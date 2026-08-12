@@ -463,3 +463,53 @@ td.term { font-weight: 600; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; }
 }
+
+/* ---------- glossary ---------- */
+
+/* A grammar word you can ask about. Underlined rather than coloured, so a
+   paragraph with several of them still reads as prose. */
+.term-link {
+  font: inherit; color: inherit; background: none; border: 0; padding: 0;
+  cursor: help; text-decoration: underline dotted;
+  text-underline-offset: 3px; text-decoration-color: var(--faint);
+  transition: color .15s, text-decoration-color .15s;
+}
+.term-link:hover, .term-link:focus-visible {
+  color: var(--primary); text-decoration-color: var(--primary);
+}
+
+.gloss-backdrop {
+  position: fixed; inset: 0; z-index: 60;
+  display: grid; place-items: center; padding: 24px;
+  background: rgba(22, 35, 60, .38);
+  animation: gloss-in .16s ease both;
+}
+.gloss-card {
+  width: min(440px, 100%); background: var(--card); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--r);
+  box-shadow: var(--sh-3); padding: 20px 22px;
+  animation: gloss-rise .2s cubic-bezier(.2, .9, .3, 1) both;
+}
+.gloss-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.gloss-term {
+  font-size: 17px; font-weight: 700; letter-spacing: -.01em;
+}
+.gloss-close {
+  border: 1px solid var(--line); background: var(--bg); color: var(--muted);
+  width: 28px; height: 28px; border-radius: 8px; cursor: pointer;
+  font-size: 12px; line-height: 1; flex: none;
+}
+.gloss-close:hover { color: var(--ink); border-color: var(--faint); }
+.gloss-what {
+  margin: 12px 0 0; font-size: 14.5px; line-height: 1.6; color: var(--muted);
+}
+.gloss-ex {
+  margin: 12px 0 0; padding: 10px 12px; border-radius: var(--r-sm);
+  background: var(--bg-tint); color: var(--ink);
+  font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; line-height: 1.55;
+}
+
+@keyframes gloss-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gloss-rise { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }

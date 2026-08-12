@@ -1,5 +1,5 @@
 import React from "../react.js";
-import { Table, Speak } from "../components/bits.jsx";
+import { Table, Speak, Lede } from "../components/bits.jsx";
 import { Drill } from "../components/Drill.jsx";
 import { vowels, consonants, xSounds, stressRules } from "../lib/content.js";
 
@@ -7,12 +7,12 @@ export function SoundTab({ progress, record, speak }) {
   return (
     <section>
       <h2>Learn it once, then stop thinking about it</h2>
-      <p className="lede">
+      <Lede>
         Spanish spelling is fully phonetic: five vowel sounds, no reduction, no schwa, no silent
         endings. The drill runs both directions — rules about letters, and dictation where audio
         plays and you write it down. Dictation is the half that trains your ears, and it works up
         from single words to whole sentences, which is where speech actually runs together.
-      </p>
+      </Lede>
 
       <h3>The five vowels</h3>
       <div className="grid g3">
@@ -45,11 +45,11 @@ export function SoundTab({ progress, record, speak }) {
       </Table>
 
       <h3>The letter x, which is only a problem in Mexico</h3>
-      <p className="lede">
+      <Lede>
         Old Spanish spelled a sh sound with x. In most words that sound later hardened into the j
         rasp, but the spelling never caught up — hence México. Indigenous place names went their own
         way, some keeping the sh and some softening to s.
-      </p>
+      </Lede>
       <div className="grid g2">
         {xSounds.map((x) => (
           <div className="card lift" key={x.s}>
