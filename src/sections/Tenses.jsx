@@ -1,5 +1,5 @@
 import React from "../react.js";
-import { Table, Speak } from "../components/bits.jsx";
+import { Table, Speak, Lede } from "../components/bits.jsx";
 import { Drill } from "../components/Drill.jsx";
 import { periphrasis } from "../lib/content.js";
 
@@ -7,11 +7,11 @@ export function TensesTab({ progress, record, speak }) {
   return (
     <section>
       <h2>Ten patterns replace most of the tense system</h2>
-      <p className="lede">
+      <Lede>
         A helper verb plus an infinitive says what English needs a whole separate tense for. These
         aren't beginner crutches — Mexican speakers reach for them first. A bonus: Mexico prefers the
         simple past over the present perfect, so <em>ya comí</em> covers what Spain would say with <em>ya he comido</em>.
-      </p>
+      </Lede>
 
       <Table head={["Pattern", "Means", "Example", "Note"]}>
         {periphrasis.map((p) => (

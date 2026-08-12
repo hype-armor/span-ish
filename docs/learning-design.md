@@ -91,6 +91,11 @@ or skipped past.
 **Do not** move feedback behind an extra tap, or batch it to the end of a round.
 That is the condition under which the effect disappears.
 
+An explanation that uses a word you do not know explains nothing, so the grammar
+terms in it are clickable: `content/glossary.js` defines them and a definition
+opens in place. It is deliberately a modal rather than a link away — leaving the
+drill to look something up is how a session ends.
+
 ### 5. Production over recognition, where production is possible
 
 Kang, McDermott & Roediger (2007) found short-answer testing produced better

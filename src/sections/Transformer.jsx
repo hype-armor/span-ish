@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "../react.js";
-import { Table } from "../components/bits.jsx";
+import { Table, Lede } from "../components/bits.jsx";
 import { Drill } from "../components/Drill.jsx";
 import { convert } from "../lib/suffix.js";
 import { suffixes, converterExamples } from "../lib/content.js";
@@ -11,11 +11,11 @@ export function TransformerTab({ progress, record, speak }) {
   return (
     <section>
       <h2>English suffixes are Spanish suffixes wearing a coat</h2>
-      <p className="lede">
-        Both languages pulled the same words out of Latin. Fifteen ending swaps turn thousands of
-        English words you already own into Spanish you never studied. Type anything that ends in one
-        of them.
-      </p>
+      <Lede>
+        Both languages pulled the same words out of Latin, so thousands of them are cognates.
+        Fifteen ending swaps turn English words you already own into Spanish you never studied. Type
+        anything that ends in one of them.
+      </Lede>
 
       <div className="machine">
         <p className="machine-label">Live conversion</p>
@@ -65,10 +65,10 @@ export function TransformerTab({ progress, record, speak }) {
         ))}
       </Table>
 
-      <p className="lede" style={{ marginTop: 20 }}>
+      <Lede style={{ marginTop: 20 }}>
         A handful are false friends. <em>Embarazada</em> is pregnant, not embarrassed;<em> éxito</em> is
         success, not exit; <em>constipado</em> means you have a head cold. And in Mexico, <em>molestar</em> only ever means to bother.
-      </p>
+      </Lede>
 
       <Drill mod="suffix" label="Suffix drill" progress={progress} record={record} speak={speak} />
     </section>

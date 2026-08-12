@@ -3,6 +3,8 @@
    place that reads it, so nothing else has to know that. */
 const MX = window.MX || {};
 
+export const glossary = MX.glossary;
+
 export const suffixes = MX.suffixes;
 export const converterExamples = MX.converterExamples;
 

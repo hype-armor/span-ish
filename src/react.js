@@ -10,4 +10,6 @@ export const useEffect = ns.react.useEffect;
 export const useRef = ns.react.useRef;
 export const useMemo = ns.react.useMemo;
 export const useCallback = ns.react.useCallback;
+export const useContext = ns.react.useContext;
+export const createContext = ns.react.createContext;
 export const createRoot = ns.dom.createRoot;

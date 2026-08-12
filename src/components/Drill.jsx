@@ -3,6 +3,7 @@ import { cardsFor } from "../lib/decks.js";
 import { matches } from "../lib/text.js";
 import { buildRound, previewInterval, isDue } from "../lib/srs.js";
 import { Results } from "./Results.jsx";
+import { Glossed, useGlossary } from "./Glossary.jsx";
 
 const ACCENTS = ["á", "é", "í", "ó", "ú", "ñ", "¿", "¡"];
 const BLANK = "⌷";
@@ -16,6 +17,7 @@ const BLANK = "⌷";
  * so it returns in the next session anyway. See docs/learning-design.md. */
 export function Drill({ mod, label, progress, record, speak, count }) {
   const size = count || 10;
+  const { active: glossOpen } = useGlossary();
   const freshRound = () => buildRound(cardsFor(mod), size, progress.items, Date.now());
 
   const [round, setRound] = useState(freshRound);
@@ -103,6 +105,8 @@ export function Drill({ mod, label, progress, record, speak, count }) {
     if (done) return;
     const onKey = (e) => {
       if (!card) return;
+      /* A definition is open on top of the card; Escape and Space belong to it. */
+      if (glossOpen) return;
       const tag = e.target && e.target.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (e.target && e.target.isContentEditable) return;
@@ -120,7 +124,7 @@ export function Drill({ mod, label, progress, record, speak, count }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [card, answered, done, advance]);
+  }, [card, answered, done, advance, glossOpen]);
 
   /* Accent buttons insert at the caret rather than appending. */
   const insert = (ch) => {
@@ -182,7 +186,9 @@ export function Drill({ mod, label, progress, record, speak, count }) {
           </div>
         )}
 
-        <p className="prompt-sub" style={card.listen ? { textAlign: "center" } : undefined}>{card.sub}</p>
+        <p className="prompt-sub" style={card.listen ? { textAlign: "center" } : undefined}>
+          <Glossed>{card.sub}</Glossed>
+        </p>
 
         {card.kind === "mc" ? (
           <div className="opts">
@@ -270,7 +276,7 @@ export function Drill({ mod, label, progress, record, speak, count }) {
               )}
             </div>
 
-            <div className="why">{card.why}</div>
+            <div className="why"><Glossed>{card.why}</Glossed></div>
 
             <div className="sched">
               {verdict === "right"

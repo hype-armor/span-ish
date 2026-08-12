@@ -91,6 +91,13 @@ Two rules:
 New cards appear in their own tab and in the interleaved Review deck
 automatically. After editing, bump `CACHE` in `sw.js` — see Republishing.
 
+`content/glossary.js` is not a deck at all. It defines the grammar words —
+subjunctive, preterite, stem — and any of them appearing in prose, in a card's
+instruction or in its explanation becomes clickable, opening a definition. Only
+the first mention in a block is linked, so a paragraph about the subjunctive does
+not turn into a page of buttons. The linter rejects a term two entries both claim,
+and a term that appears nowhere in the app, since that one could never be clicked.
+
 Not every deck is drilled. `converterExamples` and `genderExceptionTable` are
 display only — the chips under the Transformer's live converter and the
 exceptions table on the Gender tab. A word in `converterExamples` has to end in
@@ -149,7 +156,7 @@ nothing survives a reload.
 
 ## Republishing
 
-Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v10"`) to a new value whenever
+Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v11"`) to a new value whenever
 you change anything the service worker caches. Without that bump, returning
 visitors keep getting the old shell.
 

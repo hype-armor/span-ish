@@ -16,6 +16,7 @@ import { GenderTab } from "./sections/Gender.jsx";
 import { MexicanismosTab } from "./sections/Mexicanismos.jsx";
 import { ConnectorsTab } from "./sections/Connectors.jsx";
 import { ReviewTab } from "./sections/Review.jsx";
+import { GlossaryProvider } from "./components/Glossary.jsx";
 
 const TABS = [
   { id: "rules", label: "Rules", Section: RulesTab },
@@ -127,7 +128,10 @@ export function App() {
   const Section = active ? active.Section : null;
 
   return (
+    /* The provider sits inside .app on purpose: the modal it renders reads the
+       theme variables, and those are declared on .app rather than on :root. */
     <div className="app" data-theme={theme}>
+      <GlossaryProvider>
       <div className="wrap">
         <header className="masthead">
           <div className="topline">
@@ -176,6 +180,7 @@ export function App() {
           ñ, since spelling is the whole point there. Audio asks your browser for a Mexican voice first.
         </p>
       </div>
+      </GlossaryProvider>
     </div>
   );
 }

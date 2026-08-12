@@ -1,5 +1,5 @@
 import React from "../react.js";
-import { Table, Speak } from "../components/bits.jsx";
+import { Table, Speak, Lede } from "../components/bits.jsx";
 import { Drill } from "../components/Drill.jsx";
 import {
   suffixes, genderEndings, ruleVerbForms, ruleVerbEndings,
@@ -10,12 +10,12 @@ export function RulesTab({ progress, record, speak }) {
   return (
     <section>
       <h2>Learn the rule first, then stop rebuilding it</h2>
-      <p className="lede">
+      <Lede>
         Every other tab asks you to produce Spanish, which means recalling a rule and applying it in
         the same breath. This tab drills the rules by themselves — the ending maps, the gender table,
         the verb paradigms, the subjunctive recipe — so that by the time you're filling in a sentence,
         the rule is already free and your attention can go to the sentence.
-      </p>
+      </Lede>
 
       <h3>The suffix map, ending to ending</h3>
       <Table head={["English", "Spanish", "Example"]}>
@@ -50,11 +50,11 @@ export function RulesTab({ progress, record, speak }) {
       </Table>
 
       <h3>Building the present subjunctive</h3>
-      <p className="lede">
+      <Lede>
         One recipe covers nearly everything: take the yo form, drop the -o, flip the vowel — -ar verbs
         take e, -er and -ir verbs take a. Whatever irregularity the yo form carries comes along for
         free. Six verbs refuse the recipe outright, and those are the ones to memorize.
-      </p>
+      </Lede>
       <Table head={["Verb", "Subjunctive", "Why"]}>
         {ruleSubjunctiveForms.map((r) => (
           <tr key={r.v}>
@@ -77,11 +77,11 @@ export function RulesTab({ progress, record, speak }) {
         ))}
       </Table>
 
-      <p className="lede" style={{ marginTop: 20 }}>
+      <Lede style={{ marginTop: 20 }}>
         The stress rules on the Sound tab tell you where a word is stressed. These tell you when that
         stress has to be written down — the accent is never decoration, it is always correcting a
         default.
-      </p>
+      </Lede>
 
       <Drill mod="rules" label="Rule recall" progress={progress} record={record} speak={speak} />
     </section>

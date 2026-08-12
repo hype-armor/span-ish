@@ -1,5 +1,5 @@
 import React from "../react.js";
-import { Table, Speak } from "../components/bits.jsx";
+import { Table, Speak, Lede } from "../components/bits.jsx";
 import { Drill } from "../components/Drill.jsx";
 import { preteriteStems, imperfectEndings, imperfectIrregular, aspectCues } from "../lib/content.js";
 
@@ -7,12 +7,12 @@ export function PastTab({ progress, record, speak }) {
   return (
     <section>
       <h2>One past tense does most of the work</h2>
-      <p className="lede">
+      <Lede>
         Mexico reaches for the simple past where Spain would use the present perfect — <em>ya comí</em>,
         not <em>ya he comido</em> — so this is the past tense you actually hear. Regular verbs follow
         the two ending tables on the Rules tab. The irregulars are a closed set of about fifteen, and
         they are irregular together rather than each in its own way.
-      </p>
+      </Lede>
 
       <div className="grid g3">
         <div className="card lift">
@@ -58,11 +58,11 @@ export function PastTab({ progress, record, speak }) {
       </Table>
 
       <h2 style={{ marginTop: 44 }}>The other past tense, and how to choose</h2>
-      <p className="lede">
+      <Lede>
         The imperfect is the easiest tense in the language to form: two sets of endings and exactly
         three irregular verbs. Choosing between it and the preterite is the part worth practising, and
         it has nothing to do with how long ago something happened.
-      </p>
+      </Lede>
 
       <Table head={["Verbs", "Endings", "Example"]}>
         {imperfectEndings.map((e) => (
@@ -89,12 +89,12 @@ export function PastTab({ progress, record, speak }) {
       </div>
 
       <h3>Which one, and why</h3>
-      <p className="lede">
+      <Lede>
         The preterite reports an event: it happened, it finished, you can count it. The imperfect
         describes the world the event happened in — what was going on, what used to be true, what time
         it was. Most sentences with both are the same shape: the imperfect sets the scene and the
         preterite interrupts it. <em>Cocinaba cuando alguien tocó la puerta.</em>
-      </p>
+      </Lede>
 
       <Table head={["If you see", "Reach for", "Because"]}>
         {aspectCues.map((c) => (
@@ -110,10 +110,10 @@ export function PastTab({ progress, record, speak }) {
         ))}
       </Table>
 
-      <p className="lede" style={{ marginTop: 20 }}>
+      <Lede style={{ marginTop: 20 }}>
         Four verbs change meaning rather than just tense. <em>Supe</em> is found out where <em>sabía</em> is knew; <em>conocí</em> is met where <em>conocía</em> is knew of; <em>quiso</em> is tried to and <em>no quiso</em> is refused; <em>pude</em> is managed to. The
         drill below mixes forms and choices, so the wrong answer is always the other real form.
-      </p>
+      </Lede>
 
       <Drill mod="past" label="Past tense: forms and choices" progress={progress} record={record} speak={speak} count={12} />
     </section>
