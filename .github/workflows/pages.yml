@@ -35,7 +35,9 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: app.js is built from src/
+      # Covers two ways a release can silently not reach anyone: a stale app.js,
+      # and a cache name that did not move when the cached files did.
+      - name: app.js is built from src/, and sw.js caches under the right name
         run: node tools/build.js --check
 
       - name: Every script and stylesheet is in the service worker shell

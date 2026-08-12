@@ -13,7 +13,7 @@ An installable, offline-capable build of the Mexican Spanish drill app.
 | `app.js` | Built from `src/`. Committed so the site stays static — don't edit it by hand. |
 | `vendor/react.js` | React 18.3.1 and ReactDOM, vendored rather than loaded from a CDN. |
 | `manifest.webmanifest` | Name, icons, colours, and standalone display mode. |
-| `sw.js` | Service worker. Caches the shell so the app opens with no network. |
+| `sw.js` | Service worker. Caches the shell so the app opens with no network. Its `CACHE` name is generated — see Republishing. |
 | `icons/` | 192 / 512 / maskable / Apple touch icons, plus an SVG favicon. |
 | `docs/learning-design.md` | Why the app drills the way it does, and the research behind it. Read before changing drill mechanics. |
 
@@ -26,12 +26,14 @@ Changing anything under `src/` means rebuilding:
 
 ```bash
 npm install
-npm run build     # writes app.js
+npm run build     # writes app.js and the service worker's cache name
 npm test          # build is current + unit tests + content + smoke test
 ```
 
 CI fails if `app.js` does not match what `src/` builds to, so a stale bundle
-cannot reach the site.
+cannot reach the site — and equally if the cache name in `sw.js` does not match
+the files it caches, so a stale *shell* cannot outlive the release either. Both
+are fixed the same way: run `npm run build` and commit the result.
 
 `npm run stats` prints the composition of the card set — how much is typed
 production versus recognition, how much is practised in context. `docs/learning-design.md`
@@ -89,7 +91,7 @@ Two rules:
   or a translation is free; changing the answer resets that card's history.
 
 New cards appear in their own tab and in the interleaved Review deck
-automatically. After editing, bump `CACHE` in `sw.js` — see Republishing.
+automatically. After editing, run `npm run build` — see Republishing.
 
 `content/glossary.js` is not a deck at all. It defines the grammar words —
 subjunctive, preterite, stem — and any of them appearing in prose, in a card's
@@ -156,13 +158,23 @@ nothing survives a reload.
 
 ## Republishing
 
-Change `CACHE` in `sw.js` (currently `"mx-shortcuts-v11"`) to a new value whenever
-you change anything the service worker caches. Without that bump, returning
-visitors keep getting the old shell.
+Run `npm run build` and commit what it changes. That is the whole procedure.
 
-`SHELL` in the same file lists every cached path. Add new files there — an
-uncached `content/` module works online and breaks offline, which is the kind of
-bug you only find on a plane.
+The service worker only drops its old cache when `CACHE` in `sw.js` changes, so
+a forgotten bump means returning visitors keep the old shell indefinitely —
+with nothing failing anywhere to say so. Rather than trust that to memory,
+`npm run build` writes `CACHE` as a hash of every file in `SHELL`
+(`tools/cache-name.js`), and `npm run build:check` fails in CI when the
+committed name no longer matches the committed files. Change a deck, the name
+moves; change nothing, it holds still.
+
+An installed app takes two reloads to pick up a release: the first fetches and
+activates the new worker, the second runs it.
+
+`SHELL` in `sw.js` lists every cached path, and is still yours to maintain. Add
+new files there — an uncached `content/` module works online and breaks offline,
+which is the kind of bug you only find on a plane. CI checks that every script
+and stylesheet in the repo is listed.
 
 ## Offline caveat
 
