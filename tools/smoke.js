@@ -171,6 +171,51 @@ const pass = (msg) => console.log("  ✓ " + msg);
     else pass("answering still fills the option it marks");
   }
 
+  /* Phones keep :hover on whatever you last tapped — iOS especially — so a
+     hover style there is not a hover, it is a mark left on the card. Chromium
+     will not do that on its own, but CDP can force the pseudo-state, which asks
+     the question directly: on a device with no real pointer, can an unanswered
+     option be made to look chosen? Nothing here may change. */
+  {
+    const phone = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      hasTouch: true, isMobile: true,
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+    });
+    const tab = await phone.newPage();
+    await tab.goto(base + "/index.html", { waitUntil: "load" });
+    await tab.waitForSelector("nav .tab", { timeout: 15000 });
+    await tab.click(`nav .tab:has-text("Gender")`);
+    await tab.waitForTimeout(300);
+
+    const coarse = await tab.evaluate(() => matchMedia("(hover: none) and (pointer: coarse)").matches);
+    if (!coarse) fail("the emulated phone does not report a coarse pointer, so this check proves nothing");
+
+    const styleOfFirstOption = async () => {
+      await tab.waitForTimeout(300); // the .16s transition has to finish, or this reads mid-fade
+      return tab.$eval(".opt", (e) => {
+        const cs = getComputedStyle(e);
+        return { fill: cs.backgroundColor, border: cs.borderColor };
+      });
+    };
+
+    const cdp = await phone.newCDPSession(tab);
+    await cdp.send("DOM.enable");
+    await cdp.send("CSS.enable");
+    const { root } = await cdp.send("DOM.getDocument");
+    const { nodeId } = await cdp.send("DOM.querySelector", { nodeId: root.nodeId, selector: ".opt" });
+
+    const resting = await styleOfFirstOption();
+    await cdp.send("CSS.forcePseudoState", { nodeId, forcedPseudoClasses: ["hover"] });
+    const stuck = await styleOfFirstOption();
+
+    if (stuck.fill !== resting.fill) fail(`on a touch device a stuck :hover fills an unanswered option (${stuck.fill} against ${resting.fill})`);
+    else if (stuck.border !== resting.border) fail(`on a touch device a stuck :hover outlines an unanswered option (${stuck.border} against ${resting.border})`);
+    else pass("a stuck :hover on a phone leaves an unanswered option unmarked");
+
+    await phone.close();
+  }
+
   /* the storage shim prefixes every key with mx-pwa: */
   const stored = await page.evaluate(() => {
     try { return Object.keys(localStorage).filter((k) => k.startsWith("mx-pwa:")); } catch { return []; }
