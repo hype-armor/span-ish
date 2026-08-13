@@ -306,7 +306,15 @@ td.term { font-weight: 600; }
   display: flex; align-items: center; gap: 12px;
   transition: border-color .16s, background .16s, transform .16s;
 }
-.opt:hover:enabled { border-color: var(--primary); background: var(--primary-tint); }
+/* Border only, never a fill: --primary-tint is what paints the selected tab, so
+   filling a merely-hovered option makes it read as already chosen. That matters
+   because hover survives a card change — answer with the mouse, advance with
+   Enter, and the next card renders with whatever option sits under the
+   stationary pointer looking picked. Gated on a real pointer so a tap on a
+   phone cannot leave the state stuck either. */
+@media (hover: hover) and (pointer: fine) {
+  .opt:hover:enabled { border-color: var(--primary); }
+}
 .opt:active:enabled { transform: scale(.985); }
 .opt:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .opt kbd {

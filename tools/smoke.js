@@ -111,6 +111,36 @@ const pass = (msg) => console.log("  ✓ " + msg);
   else if (!finished) fail(`played ${answered} cards but the round never reached its results`);
   else pass(`played a full round of ${answered} cards through to the results`);
 
+  /* An unanswered option must never look chosen. Hover survives a card change
+     — answer with the mouse, advance with Enter, and the pointer is still over
+     an option on the next card — so if hovering filled the button, every such
+     card would open with one option looking already picked. */
+  {
+    await page.click(`nav .tab:has-text("Gender")`); // all multiple choice
+    await page.waitForTimeout(250);
+    const opts = await page.$$(".opt");
+    const bgOf = (h) => h.evaluate((e) => getComputedStyle(e).backgroundColor);
+    const borderOf = (h) => h.evaluate((e) => getComputedStyle(e).borderColor);
+
+    const restBg = await bgOf(opts[0]);
+    await opts[1].hover();
+    await page.waitForTimeout(220); // the transition
+    const [hoverBg, hoverBorder, otherBorder] = [await bgOf(opts[1]), await borderOf(opts[1]), await borderOf(opts[0])];
+
+    if (hoverBg !== restBg) fail(`hovering an unanswered option fills it (${hoverBg} against ${restBg}); it reads as already chosen`);
+    else pass("hovering an unanswered option does not make it look chosen");
+
+    if (hoverBorder === otherBorder) fail("hovering an option changes nothing at all; the button has lost its affordance");
+    else pass("  but it still highlights its border");
+
+    /* and the fill is still what marks the answer once one is given */
+    await opts[1].click();
+    await page.waitForTimeout(250);
+    const marked = await page.$$eval(".opt[data-s]", (els) => els.length);
+    if (!marked) fail("answering a card marked no option");
+    else pass("answering still fills the option it marks");
+  }
+
   /* the storage shim prefixes every key with mx-pwa: */
   const stored = await page.evaluate(() => {
     try { return Object.keys(localStorage).filter((k) => k.startsWith("mx-pwa:")); } catch { return []; }
