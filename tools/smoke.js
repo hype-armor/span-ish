@@ -133,8 +133,38 @@ const pass = (msg) => console.log("  ✓ " + msg);
     if (hoverBorder === otherBorder) fail("hovering an option changes nothing at all; the button has lost its affordance");
     else pass("  but it still highlights its border");
 
+    /* Advancing destroys the button that had focus. Engines disagree about
+       where focus goes next — Chromium picks <body>, iOS picks the next
+       focusable element, which would be an option on the card that just
+       appeared, drawn with a focus ring that reads as already chosen. The app
+       parks focus itself so the outcome does not depend on the engine. */
+    {
+      const opt = await page.$(".opt:not([disabled])");
+      await opt.click();
+      await page.waitForTimeout(150);
+      const next = await page.$("button:has-text('Next'), button:has-text('See results')");
+      await next.click();
+      await page.waitForTimeout(250);
+      const focus = await page.evaluate(() => {
+        const a = document.activeElement;
+        return {
+          onAnOption: !!(a && a.closest && a.closest(".opt")),
+          where: a ? (a.className || a.tagName) : "(none)",
+          ringed: [...document.querySelectorAll(".opt")].filter((e) => e.matches(":focus-visible")).length,
+        };
+      });
+      /* Asserted positively. "not on an option" would pass on Chromium even
+         with the fix removed, since Chromium falls back to <body> on its own —
+         the check has to see the app actually placing focus. */
+      if (focus.onAnOption) fail(`after advancing, focus landed on an option (${focus.where}) — it draws a ring that looks like a choice`);
+      else if (!/\bqbody\b/.test(focus.where)) fail(`after advancing, focus was left on "${focus.where}" rather than parked on the card; where it lands is then up to the browser`);
+      else pass("after advancing, focus parks on the card, clear of the options");
+      if (focus.ringed) fail(`${focus.ringed} option(s) show a focus ring on an unanswered card`);
+    }
+
     /* and the fill is still what marks the answer once one is given */
-    await opts[1].click();
+    const fresh = await page.$$(".opt:not([disabled])"); // the card changed; the old handles are stale
+    await fresh[0].click();
     await page.waitForTimeout(250);
     const marked = await page.$$eval(".opt[data-s]", (els) => els.length);
     if (!marked) fail("answering a card marked no option");
