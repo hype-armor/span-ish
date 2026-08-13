@@ -90,7 +90,7 @@ window.MX.suffixes = [
   {
     en: "-ize",
     es: "-izar",
-    re: /(ize|ise)$/i,
+    re: /(ize|ise|yze|yse)$/i,
     tail: "izar",
     ex: [["organize", "organizar"], ["analyze", "analizar"], ["memorize", "memorizar"]],
     note: "A regular -ar verb, so it conjugates with no surprises."

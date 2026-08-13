@@ -4,9 +4,11 @@
    perfect — ya comí, not ya he comido — so this is the past tense that
    actually gets spoken, and its irregulars are a closed set.
 
-   `stems` are the strong preterites: they all share one set of endings
-   (-e, -iste, -o, -imos, -ieron), none of those endings carries a written
-   accent, and the stem is what changes. Forms are listed in the order
+   `stems` are the preterites worth knowing cold. Most of them are strong: one
+   set of endings (-e, -iste, -o, -imos, -ieron) on a changed stem. The last
+   three are not strong at all — ser/ir, dar and ver are each irregular in
+   their own way, and their rows say how. What the whole table does share is
+   that no form carries a written accent. Forms are listed in the order
    yo, tú, él/ella, nosotros, ellos — Mexico has no vosotros.
 
    `sentences` drive the production drill, same shape as verbs.js. */

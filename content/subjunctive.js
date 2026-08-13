@@ -102,7 +102,7 @@ window.MX.subjunctiveSentences = [
     mood: "sub",
     sents: [
       {
-        s: "Cuando ___ , me llamas.",
+        s: "Cuando ___, me llamas.",
         ind: "llegas",
         sub: "llegues",
         t: "When you get there, call me — it hasn't happened yet."
@@ -135,7 +135,7 @@ window.MX.subjunctiveSentences = [
     mood: "sub",
     sents: [
       {
-        s: "Te lo explico para que lo ___ .",
+        s: "Te lo explico para que lo ___.",
         ind: "entiendes",
         sub: "entiendas",
         t: "I'm explaining it so you understand it."
@@ -180,7 +180,7 @@ window.MX.subjunctiveSentences = [
     trig: "antes de que",
     mood: "sub",
     sents: [
-      { s: "Hablamos antes de que te ___ .", ind: "vas", sub: "vayas", t: "Let's talk before you leave." },
+      { s: "Hablamos antes de que te ___.", ind: "vas", sub: "vayas", t: "Let's talk before you leave." },
       { s: "Cierra antes de que ___ frío.", ind: "hace", sub: "haga", t: "Close it before it gets cold." }
     ]
   },
@@ -195,7 +195,7 @@ window.MX.subjunctiveSentences = [
         sub: "tenga",
         t: "I'll go, unless I have to work."
       },
-      { s: "Salimos, a menos que ___ .", ind: "llueve", sub: "llueva", t: "We'll go out, unless it rains." }
+      { s: "Salimos, a menos que ___.", ind: "llueve", sub: "llueva", t: "We'll go out, unless it rains." }
     ]
   },
   {
@@ -204,7 +204,7 @@ window.MX.subjunctiveSentences = [
     mood: "sub",
     sents: [
       { s: "Es posible que ___ tráfico.", ind: "hay", sub: "haya", t: "There might be traffic." },
-      { s: "Es posible que no ___ .", ind: "viene", sub: "venga", t: "He might not come." }
+      { s: "Es posible que no ___.", ind: "viene", sub: "venga", t: "He might not come." }
     ]
   },
   {
@@ -213,7 +213,7 @@ window.MX.subjunctiveSentences = [
     mood: "sub",
     sents: [
       { s: "Me alegra que ___ aquí.", ind: "estás", sub: "estés", t: "I'm glad you're here." },
-      { s: "Me alegra que te ___ .", ind: "gusta", sub: "guste", t: "I'm glad you like it." }
+      { s: "Me alegra que te ___.", ind: "gusta", sub: "guste", t: "I'm glad you like it." }
     ]
   }
 ];

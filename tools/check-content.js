@@ -137,6 +137,21 @@ function requireBlank(name, sentsFn) {
   });
 }
 
+/* The blank is replaced by the answer to build the model sentence, the audio
+   and the explanation, so "___ ," renders as "Si quieres , te acompaño" —
+   a space Spanish never writes, shown to the learner as the correct answer. */
+function checkBlankSpacing(name, sentencesFn) {
+  const rows = MX[name];
+  if (!Array.isArray(rows)) return;
+  rows.forEach((row, i) => {
+    for (const s of sentencesFn(row)) {
+      if (/___\s+[,.;:?!]/.test(String(s || ""))) {
+        fail(name, `entry ${i} leaves a space between the blank and the punctuation, which survives into the filled-in sentence: ${s}`);
+      }
+    }
+  });
+}
+
 /* ---------- the decks ---------- */
 
 requireFields("glossary", ["term", "what"]);
@@ -333,6 +348,14 @@ requireOneOf("genderNouns", "the article", ["el", "la"], (r) => r[1]);
 (MX.genderExceptionTable || []).forEach((row, i) => {
   if (!Array.isArray(row) || row.length !== 3) fail("genderExceptionTable", `entry ${i} is not a [word, article, why] row`);
 });
+
+const sentsOf = (r) => (r.sents || []).map((s) => s.s);
+checkBlankSpacing("verbSentences", sentsOf);
+checkBlankSpacing("preteriteSentences", sentsOf);
+checkBlankSpacing("subjunctiveSentences", sentsOf);
+checkBlankSpacing("aspectContrasts", sentsOf);
+checkBlankSpacing("siClauses", (r) => [r.s]);
+checkBlankSpacing("backshift", (r) => [r.s]);
 
 requireFields("mexicanismos", ["mx", "sp", "en", "n"]);
 requireUnique("mexicanismos", "the Mexican word", (r) => r.mx);

@@ -121,7 +121,7 @@ window.MX.verbSentences = [
     sents: [
       { s: "¿___ un cafecito?", t: "Want a little coffee?" },
       { s: "¿Qué ___ comer?", t: "What do you want to eat?" },
-      { s: "Si ___ , te acompaño.", t: "If you want, I'll go with you." }
+      { s: "Si ___, te acompaño.", t: "If you want, I'll go with you." }
     ]
   },
   {
@@ -170,7 +170,7 @@ window.MX.verbSentences = [
     a: "haces",
     sents: [
       { s: "¿Qué ___ este fin?", t: "What are you doing this weekend?" },
-      { s: "¿A qué hora lo ___ ?", t: "What time do you do it?" },
+      { s: "¿A qué hora lo ___?", t: "What time do you do it?" },
       { s: "Nunca ___ la tarea.", t: "You never do the homework." }
     ]
   },
@@ -200,7 +200,7 @@ window.MX.verbSentences = [
     a: "salgo",
     sents: [
       { s: "___ del trabajo a las seis.", t: "I leave work at six." },
-      { s: "Ya ___ , nomás agarro las llaves.", t: "I'm leaving now, just grabbing my keys." },
+      { s: "Ya ___, nomás agarro las llaves.", t: "I'm leaving now, just grabbing my keys." },
       { s: "Casi nunca ___ entre semana.", t: "I hardly ever go out on weekdays." }
     ]
   },
@@ -289,7 +289,7 @@ window.MX.verbSentences = [
     p: "tú",
     a: "oyes",
     sents: [
-      { s: "¿Me ___ , o hablo más despacio?", t: "Can you hear me, or should I slow down?" },
+      { s: "¿Me ___, o hablo más despacio?", t: "Can you hear me, or should I slow down?" },
       { s: "¿___ ese ruido?", t: "Do you hear that noise?" },
       { s: "No me ___ nada.", t: "You can't hear me at all." }
     ]
@@ -311,7 +311,7 @@ window.MX.verbSentences = [
     sents: [
       { s: "No ___ bien sin lentes.", t: "I don't see well without glasses." },
       { s: "___ la tele en la noche.", t: "I watch TV at night." },
-      { s: "Ya ___ , tienes razón.", t: "I see now — you're right." }
+      { s: "Ya ___, tienes razón.", t: "I see now — you're right." }
     ]
   },
   {

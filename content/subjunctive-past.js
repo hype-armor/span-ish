@@ -2,13 +2,13 @@
 
    The present subjunctive is built from the yo present. This one is built
    from the ellos preterite: drop -ron, add -ra. That means every preterite
-   irregularity you already know carries straight over, and the fifteen strong
-   stems in preterite.js are the fifteen imperfect subjunctives — so the drill
-   derives those forms from that file rather than repeating them here.
+   irregularity you already know carries straight over, and the fifteen rows in
+   preterite.js are fifteen imperfect subjunctives — so the drill derives those
+   forms from that file rather than repeating them here.
 
-   It shows up in four places: si clauses that are contrary to fact, any
-   trigger from subjunctive.js once the main verb is in the past, como si,
-   and quisiera used as a softer quiero.
+   It shows up in five places: si clauses that are contrary to fact, any
+   trigger from subjunctive.js once the main verb is in the past, ojalá when
+   you are wishing rather than hoping, como si, and quisiera as a softer quiero.
 
    Forms are listed yo, tú, él/ella, nosotros, ellos. */
 

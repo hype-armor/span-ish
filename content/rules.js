@@ -76,14 +76,14 @@ window.MX.ruleFacts = [
   {
     q: "tengo · hago · pongo · salgo · vengo",
     sub: "What do these share?",
-    a: "An irregular yo form only",
+    a: "A yo form ending in -go",
     opts: [
-      "An irregular yo form only",
+      "A yo form ending in -go",
       "A stem change in every form",
       "An irregularity in the preterite only",
       "Nothing — they are regular"
     ],
-    why: "The yo-go group. Every other present form behaves, and the whole subjunctive is built off that yo form."
+    why: "The yo-go group, and the -go is the whole of what they share. For hago, pongo and salgo it is the only irregularity. Tengo and vengo carry a stem change on top of it — tienes, vienes — so those two are yo-go and boot verb at once. Either way, the subjunctive is built off that yo form."
   },
   {
     q: "nación → naciones",
@@ -129,7 +129,12 @@ window.MX.ruleSubjunctiveForms = [
   { v: "conocer", a: "conozca", irr: false, why: "yo conozco → conozca. The -zco survives intact." },
   { v: "ser", a: "sea", irr: true, why: "No -o yo form to build on. Memorize it." },
   { v: "ir", a: "vaya", irr: true, why: "Irregular. Ojalá que vaya todo bien." },
-  { v: "estar", a: "esté", irr: true, why: "Irregular, and it keeps its written accent throughout." },
+  {
+    v: "estar",
+    a: "esté",
+    irr: true,
+    why: "Irregular. Every form carries the accent except nosotros: esté, estés, esté, estemos, estén."
+  },
   {
     v: "dar",
     a: "dé",
@@ -164,6 +169,6 @@ window.MX.ruleAccents = [
   {
     q: "¿qué? · ¿cómo? · ¿dónde? · ¿cuándo?",
     a: "Marking a question word",
-    why: "They lose the accent when they stop asking: sé dónde vives, but donde vives está lejos."
+    why: "The accent marks the asking, and an indirect question is still asking: ¿dónde vives? and sé dónde vives both keep it. It goes only when the word stops asking and merely joins: donde vives está lejos."
   }
 ];
