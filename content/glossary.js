@@ -187,8 +187,8 @@ window.MX.glossary = [
   {
     term: "yo-go",
     also: ["yo-go group"],
-    what: "Verbs that are irregular only in the yo form, which then ends in -go. Everything else behaves.",
-    ex: "tengo, pongo, salgo.",
+    what: "Verbs whose yo form ends in -go. For hago, pongo and salgo that is their only irregularity; tener and venir carry a stem change on top of it.",
+    ex: "hago, pongo, salgo.",
   },
   {
     term: "trigger",

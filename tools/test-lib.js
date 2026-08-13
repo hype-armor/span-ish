@@ -174,6 +174,46 @@ const srs = load("src/lib/srs.js");
   check("a short deck yields what it has", small.length, 4);
 }
 
+/* ---------- the Transformer's live converter ---------- */
+
+/* The machine is a heuristic and will never handle every English word, but it
+   has to reproduce the Spanish the deck itself documents: those pairs are what
+   the reference table prints and what the one-tap chips feed it, so a mismatch
+   is the app contradicting itself in public. Written accents are excluded,
+   because the note under the box says the machine leaves them off. */
+{
+  global.window = global;
+  const CONTENT = path.join(ROOT, "content");
+  for (const f of fs.readdirSync(CONTENT)) require(path.join(CONTENT, f));
+  const { convert } = load("src/lib/suffix.js");
+
+  const bare = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const render = (word) => {
+    const r = convert(word);
+    return r && r.ok ? r.stem + r.tail : "(no rule matches)";
+  };
+
+  const wrong = [];
+  for (const rule of global.MX.suffixes) {
+    for (const [english, spanish] of rule.ex) {
+      const got = render(english);
+      if (bare(got) !== bare(spanish)) wrong.push(`${english} → ${got}, but the deck says ${spanish}`);
+    }
+  }
+  check("every documented suffix example converts to the Spanish beside it", wrong, []);
+
+  /* The chips are the highest-traffic path into the machine. */
+  check("every one-tap example matches a rule",
+    global.MX.converterExamples.filter((w) => render(w) === "(no rule matches)"), []);
+
+  /* -mente hangs off the feminine adjective, and which vowel that needs is the
+     part the machine used to get wrong. */
+  check("rapidly takes the linking a", render("rapidly"), "rapidamente");
+  check("normally does not", render("normally"), "normalmente");
+  check("constantly takes an e", render("constantly"), "constantemente");
+  check("absolutely drops the English silent e first", render("absolutely"), "absolutamente");
+}
+
 /* ---------- the service worker's cache name ---------- */
 
 /* This is the one rule where being wrong is invisible: a cache name that fails
