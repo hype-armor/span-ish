@@ -41,6 +41,10 @@ const SIZES = [
   { name: "desktop", width: 1000, height: 1200 },
   { name: "phone", width: 390, height: 844 },
   { name: "small phone", width: 360, height: 640 },
+  /* Narrower than any phone sold, which is the point: it is where a row of
+     three fixed-width things starts hanging over the side, and a browser
+     window can be dragged to any width at all. */
+  { name: "very narrow", width: 280, height: 600 },
   { name: "phone, landscape", width: 740, height: 360 },
 ];
 
@@ -158,8 +162,28 @@ async function assertCardFits(page, where) {
       if (clipsY && el.scrollHeight - el.clientHeight > 1 && el.clientHeight > 0) {
         out.push(`${el.className || el.tagName} clips ${el.scrollHeight - el.clientHeight}px off the bottom`);
       }
-      if (clipsX && el.scrollWidth - el.clientWidth > 1 && el.clientWidth > 0) {
+      /* An ellipsis is not an accident. A chip that says "el año pasado fu…"
+         has been shortened on purpose and carries the whole string in its
+         title; the failure this check is for is text that was cut off with
+         nothing to say so. */
+      const elided = style.textOverflow === "ellipsis";
+      if (clipsX && !elided && el.scrollWidth - el.clientWidth > 1 && el.clientWidth > 0) {
         out.push(`${el.className || el.tagName} clips ${el.scrollWidth - el.clientWidth}px off the side`);
+      }
+    }
+
+    /* Sideways, the clipping test is not enough. An element can hang over the
+       edge of the card with `overflow: visible` all the way up, and still be
+       cut off — by the app frame, which clips everything and has no scrollbar
+       to get it back with. So this asks the question geometrically instead:
+       is anything sticking out past the card's own edges? */
+    const box = card.getBoundingClientRect();
+    for (const el of card.querySelectorAll("*")) {
+      if (el.closest(".tablewrap")) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width === 0) continue;
+      if (r.right > box.right + 1 || r.left < box.left - 1) {
+        out.push(`${el.className || el.tagName} hangs ${Math.round(Math.max(r.right - box.right, box.left - r.left))}px over the side`);
       }
     }
     return out.slice(0, 3);
@@ -572,9 +596,17 @@ async function assertScrolls(page, where) {
         capped: !!document.querySelector(".requeue-l .more"),
         spoils: document.querySelectorAll(".badge-chip").length,
       }));
-      if (await assertCardFits(open, `a bad ${SMALL.width}×${SMALL.height} run's results`)) {
-        pass(`the worst results screen fits too (${shape.missed} chips, ${shape.spoils} won)`);
-      }
+      let fits = await assertCardFits(open, `a bad ${SMALL.width}×${SMALL.height} run's results`);
+      /* And again narrower than any phone, which is where a row of fixed-width
+         things starts hanging over the side. A browser window can be dragged
+         to any width, and the frame clips without a scrollbar, so anything
+         over the edge is simply gone. */
+      await open.setViewportSize({ width: 280, height: 600 });
+      await open.waitForTimeout(320);
+      fits = (await assertCardFits(open, "the same results at 280×600")) && fits;
+      await open.setViewportSize(SMALL);
+      await open.waitForTimeout(280);
+      if (fits) pass(`the worst results screen fits too (${shape.missed} chips, ${shape.spoils} won), down to 280px wide`);
       /* The cap only proves itself when it is reached; a lucky run is not a
          failure, it just did not test this. */
       if (shape.capped) pass("  and a list longer than the cap says how much more there was");

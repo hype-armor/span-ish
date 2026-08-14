@@ -9,7 +9,7 @@ const RADIUS = 46;
    and a mission is a thing that fits — so the two lists that have no natural
    length are given one. Nothing is lost by the cap: every missed item is due
    again immediately and comes back on its own. */
-const MISSES_SHOWN = 6;
+const MISSES_SHOWN = 5;
 const WON_SHOWN = 4;
 
 /* What a mission adds up to.
@@ -170,7 +170,7 @@ export function MissionResult({ region, stage, outcome, onRestart, onExit, motio
                   {missedRest > 0 && <b> · {missed.length} in all</b>}
                 </div>
                 <div className="requeue-l">
-                  {missedShown.map((m, i) => <span key={i}>{m.label}</span>)}
+                  {missedShown.map((m, i) => <span key={i} title={m.label}>{m.label}</span>)}
                   {missedRest > 0 && <span className="more">+{missedRest} more</span>}
                 </div>
               </div>
