@@ -162,7 +162,12 @@ async function assertCardFits(page, where) {
       if (clipsY && el.scrollHeight - el.clientHeight > 1 && el.clientHeight > 0) {
         out.push(`${el.className || el.tagName} clips ${el.scrollHeight - el.clientHeight}px off the bottom`);
       }
-      if (clipsX && el.scrollWidth - el.clientWidth > 1 && el.clientWidth > 0) {
+      /* An ellipsis is not an accident. A chip that says "el año pasado fu…"
+         has been shortened on purpose and carries the whole string in its
+         title; the failure this check is for is text that was cut off with
+         nothing to say so. */
+      const elided = style.textOverflow === "ellipsis";
+      if (clipsX && !elided && el.scrollWidth - el.clientWidth > 1 && el.clientWidth > 0) {
         out.push(`${el.className || el.tagName} clips ${el.scrollWidth - el.clientWidth}px off the side`);
       }
     }
