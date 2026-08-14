@@ -332,6 +332,23 @@ async function assertNoScroll(page, where) {
     if (size < 8) fail(`${region}: its ${mode} mission built a round of ${size} cards`);
     if (!shape.answerable) fail(`${region}: its ${mode} mission rendered no way to answer`);
     if (mode === "ear" && !shape.audible) fail(`${region}: By Ear rendered no play button`);
+    /* The Anvil is meant to show the rule being applied — the English ending
+       split off, the swap named, and a slot for the Spanish word. Falling back
+       to a plain typed prompt hides the one thing that region teaches. */
+    if (mode === "forge") {
+      const anvil = await open.evaluate(() => {
+        const el = document.querySelector(".forge");
+        return el && {
+          ending: (el.querySelector(".forge-in b") || {}).textContent || "",
+          rule: (el.querySelector(".forge-rule") || {}).textContent || "",
+          slot: !!el.querySelector(".forge-blank"),
+        };
+      });
+      if (!anvil) fail(`${region}: The Anvil fell back to an ordinary typed prompt`);
+      else if (!anvil.ending) fail(`${region}: The Anvil did not split the English ending off`);
+      else if (!/→/.test(anvil.rule)) fail(`${region}: The Anvil did not name the swap (${anvil.rule})`);
+      else if (!anvil.slot) fail(`${region}: The Anvil showed no slot for the answer`);
+    }
     await open.click('.icon-btn[aria-label="Leave this mission"]');
     await open.waitForSelector(".region-screen", { timeout: 5000 });
   }
