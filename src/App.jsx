@@ -1,43 +1,43 @@
-import React, { useState, useEffect, useRef, useCallback } from "./react.js";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "./react.js";
 import { useSpeech } from "./lib/speech.js";
 import { record as recordItem, summarise, tallyReview } from "./lib/srs.js";
 import { ALL_IDS, ALL_ID_SET } from "./lib/decks.js";
 import { normalise } from "./lib/progress.js";
 import { PROGRESS_KEYS, THEME_KEYS, readFirst } from "./lib/storage.js";
+import {
+  regionById, stagesFor, recordMission, rollDay, awardBadges, masteryPoints,
+  levelFor, titleFor, streakStatus, unlockedRegions, stagesCleared, REGIONS,
+} from "./lib/game.js";
+import { configure as configureJuice } from "./lib/juice.js";
 
-import { RulesTab } from "./sections/Rules.jsx";
-import { TransformerTab } from "./sections/Transformer.jsx";
-import { SoundTab } from "./sections/Sound.jsx";
-import { VerbsTab } from "./sections/Verbs.jsx";
-import { PastTab } from "./sections/Past.jsx";
-import { TensesTab } from "./sections/Tenses.jsx";
-import { SubjunctiveTab } from "./sections/Subjunctive.jsx";
-import { GenderTab } from "./sections/Gender.jsx";
-import { MexicanismosTab } from "./sections/Mexicanismos.jsx";
-import { ConnectorsTab } from "./sections/Connectors.jsx";
-import { ReviewTab } from "./sections/Review.jsx";
+import { Hud } from "./components/Hud.jsx";
+import { Dock } from "./components/Dock.jsx";
+import { Mission } from "./components/Mission.jsx";
 import { GlossaryProvider } from "./components/Glossary.jsx";
+import { MapScreen } from "./screens/Map.jsx";
+import { RegionScreen } from "./screens/Region.jsx";
+import { CodexScreen } from "./screens/Codex.jsx";
+import { TodayScreen } from "./screens/Today.jsx";
+import { LabScreen } from "./screens/Lab.jsx";
 
-const TABS = [
-  { id: "rules", label: "Rules", Section: RulesTab },
-  { id: "transformer", label: "Transformer", Section: TransformerTab },
-  { id: "sound", label: "Sound", Section: SoundTab },
-  { id: "verbs", label: "Verbs", Section: VerbsTab },
-  { id: "past", label: "Past", Section: PastTab },
-  { id: "periphrasis", label: "Tenses", Section: TensesTab },
-  { id: "subjunctive", label: "Subjunctive", Section: SubjunctiveTab },
-  { id: "gender", label: "Gender", Section: GenderTab },
-  { id: "mexicanismos", label: "Mexicanismos", Section: MexicanismosTab },
-  { id: "connectors", label: "Connectors", Section: ConnectorsTab },
-  { id: "mixed", label: "Review", Section: ReviewTab },
-];
+const EMPTY = { scores: {}, items: {}, reviews: {}, game: null };
 
+/* The shell.
+ *
+ * One fixed-height frame that never scrolls: a heads-up strip, a stage that
+ * takes whatever is left, and a dock. Every screen is sized to the stage and
+ * pages its own content if it does not fit (components/Pages.jsx). Nothing in
+ * the app has a scrollbar, on any screen, at any size. */
 export function App() {
-  const [tab, setTab] = useState("rules");
-  const [progress, setProgress] = useState({ scores: {}, items: {} });
+  const [progress, setProgress] = useState(EMPTY);
   const [theme, setTheme] = useState("light");
   const [loaded, setLoaded] = useState(false);
+  const [view, setView] = useState({ at: "map" });
   const speak = useSpeech();
+
+  const canvasRef = useRef(null);
+  const progressRef = useRef(progress);
+  progressRef.current = progress;
 
   /* Load once. Until this finishes, `loaded` keeps the save effect from
      writing the empty starting state over real history. */
@@ -52,23 +52,13 @@ export function App() {
       setTheme(preferred || "light");
 
       const savedProgress = await readFirst(PROGRESS_KEYS);
-      if (savedProgress) {
-        try {
-          setProgress(normalise(JSON.parse(savedProgress)));
-        } catch {
-          /* unreadable progress is left alone rather than thrown away */
-        }
-      }
+      let next = normalise(savedProgress ? safeParse(savedProgress) : null);
+      /* A day that ended while the app was closed takes its counters with it. */
+      next = { ...next, game: rollDay(next.game, Date.now()) };
+      setProgress(next);
       setLoaded(true);
     })();
   }, []);
-
-  /* Switching tabs scrolls back up, but not on first paint. */
-  const firstTab = useRef(true);
-  useEffect(() => {
-    if (firstTab.current) { firstTab.current = false; return; }
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [tab]);
 
   const firstSave = useRef(true);
   useEffect(() => {
@@ -83,7 +73,21 @@ export function App() {
     })();
   }, [progress, loaded]);
 
-  const persist = useCallback((next) => setProgress(next), []);
+  const game = progress.game;
+
+  /* A system-level preference for less motion wins over the in-app setting;
+     the setting can only ever turn more of it off. */
+  const systemQuiet =
+    typeof window !== "undefined" && window.matchMedia
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false;
+  const motion = !game || systemQuiet || game.settings.motion === "reduced" ? "reduced" : "full";
+
+  useEffect(() => {
+    if (game) configureJuice(game.settings);
+  }, [game && game.settings]);
+
+  const persist = useCallback((next) => setProgress(normalise(next)), []);
 
   const toggleTheme = async () => {
     const next = theme === "dark" ? "light" : "dark";
@@ -95,92 +99,189 @@ export function App() {
     }
   };
 
-  /* Called once per finished round with that round's answers. */
-  const record = useCallback((mod, answers) => {
-    if (!answers.length) return;
-    const now = Date.now();
-    const right = answers.filter((a) => a.right).length;
-    const percent = Math.round((right / answers.length) * 100);
-
-    setProgress((prev) => {
-      const score = prev.scores[mod] || { right: 0, total: 0, best: 0 };
-      const items = { ...prev.items };
-      let reviews = prev.reviews || {};
-      for (const answer of answers) {
-        /* Tally against the item as it stands *before* the update, since the
-           question is how the interval that just elapsed performed. */
-        reviews = tallyReview(reviews, items[answer.id], answer.right);
-        items[answer.id] = recordItem(items[answer.id], answer.right, now);
-      }
-      return {
-        scores: {
-          ...prev.scores,
-          [mod]: { right: score.right + right, total: score.total + answers.length, best: Math.max(score.best, percent) },
-        },
-        items,
-        reviews,
-      };
-    });
+  const setSettings = useCallback((patch) => {
+    setProgress((prev) => ({
+      ...prev,
+      game: { ...prev.game, settings: { ...prev.game.settings, ...patch } },
+    }));
   }, []);
 
-  const summary = summarise(progress.items, Date.now(), ALL_IDS, ALL_ID_SET);
-  const active = TABS.find((t) => t.id === tab);
-  const Section = active ? active.Section : null;
+  /* One mission's worth of answers, recorded against the schedule and against
+     the game in a single step so the two can never disagree about what
+     happened. The report going back to the results screen is derived here
+     rather than read out of state, which has not been written yet. */
+  const finishMission = useCallback((payload) => {
+    const now = Date.now();
+    const before = progressRef.current;
+    const { answers, mode, region, stage, score } = payload;
+
+    const items = { ...before.items };
+    let reviews = before.reviews || {};
+    let right = 0;
+    for (const answer of answers) {
+      /* Tally against the item as it stands *before* the update, since the
+         question is how the interval that just elapsed performed. */
+      reviews = tallyReview(reviews, items[answer.id], answer.right);
+      items[answer.id] = recordItem(items[answer.id], answer.right, now);
+      if (answer.right) right++;
+    }
+
+    const mod = (regionById(region) || {}).mod || region;
+    const was = before.scores[mod] || { right: 0, total: 0, best: 0 };
+    const percent = answers.length ? Math.round((right / answers.length) * 100) : 0;
+    const scores = {
+      ...before.scores,
+      [mod]: { right: was.right + right, total: was.total + answers.length, best: Math.max(was.best, percent) },
+    };
+
+    const pointsBefore = masteryPoints(before.items, ALL_IDS);
+    const pointsAfter = masteryPoints(items, ALL_IDS);
+
+    const played = recordMission(before.game, { answers, mode, region, stage, score, now });
+    const summaryAfter = summarise(items, now, ALL_IDS, ALL_ID_SET);
+    const open = unlockedRegions(played.game);
+    const awarded = awardBadges(played.game, {
+      missions: played.game.today.missions,
+      flawless: played.game.today.flawless,
+      bosses: played.game.today.boss,
+      streak: played.game.streak.count,
+      level: levelFor(pointsAfter),
+      mature: summaryAfter.mature,
+      unlocked: open.size,
+      met: summaryAfter.seen,
+      due: summaryAfter.due,
+    });
+
+    setProgress({ scores, items, reviews, game: awarded.game });
+
+    return {
+      xp: played.xp,
+      combo: played.combo,
+      flawless: played.flawless,
+      cram: played.cram,
+      badges: awarded.won,
+      level: {
+        before: levelFor(pointsBefore),
+        after: levelFor(pointsAfter),
+        title: titleFor(levelFor(pointsAfter)),
+      },
+    };
+  }, []);
+
+  const summary = useMemo(
+    () => summarise(progress.items, Date.now(), ALL_IDS, ALL_ID_SET),
+    [progress.items],
+  );
+  const points = useMemo(() => masteryPoints(progress.items, ALL_IDS), [progress.items]);
+
+  if (!loaded || !game) {
+    return <div className="app" data-theme={theme} data-motion="reduced" />;
+  }
+
+  const region = view.region ? regionById(view.region) : null;
+  const inMission = view.at === "mission" && region && view.stage;
+  const streak = streakStatus(game, Date.now());
+  const dockPip = summary.due > 0 && !game.today.goalMet ? summary.due : 0;
+
+  /* The Arena needs a few regions behind it before interleaving means
+     anything, so "take these into the Arena" falls back to wherever is open. */
+  const goRegion = (id) => {
+    const open = unlockedRegions(game);
+    const target = open.has(id)
+      ? id
+      : (REGIONS.filter((r) => open.has(r.id)).sort((a, b) => stagesCleared(game, b.id) - stagesCleared(game, a.id))[0] || REGIONS[0]).id;
+    setView({ at: "region", region: target });
+  };
 
   return (
-    /* The provider sits inside .app on purpose: the modal it renders reads the
-       theme variables, and those are declared on .app rather than on :root. */
-    <div className="app" data-theme={theme}>
+    <div className="app" data-theme={theme} data-motion={motion} data-mission={!!inMission}>
       <GlossaryProvider>
-      <div className="wrap">
-        <header className="masthead">
-          <div className="topline">
-            <div>
-              <p className="eyebrow">Español mexicano</p>
-              <h1>You already know a few thousand <span>palabras</span></h1>
-            </div>
-            <button
-              className="icon-btn"
-              onClick={toggleTheme}
-              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            >
-              {theme === "dark" ? "☀" : "☾"}
-            </button>
-          </div>
-          <p className="deck">
-            Mexican Spanish is regular enough to learn as a set of rules rather than a pile of
-            memorization. Read a rule, then drill it. Every item is scheduled on its own — answer it
-            right and it comes back later, miss it and it comes back today.
-          </p>
-        </header>
-      </div>
+        {!inMission && <Hud game={game} points={points} summary={summary} />}
 
-      <div className="navwrap">
-        <div className="wrap">
-          <nav>
-            {TABS.map((t) => (
-              <button key={t.id} className="tab" data-on={tab === t.id} onClick={() => setTab(t.id)}>
-                {t.label}
-                {t.id === "mixed" && loaded && summary.due > 0 && <span className="pip">{summary.due}</span>}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
+        <main className="stage">
+          {view.at === "map" && (
+            <MapScreen
+              game={game}
+              progress={progress}
+              onRegion={(r) => setView({ at: "region", region: r.id })}
+            />
+          )}
 
-      <div className="wrap">
-        {Section && (
-          tab === "mixed"
-            ? <Section progress={progress} record={record} speak={speak} persist={persist} sum={summary} />
-            : <Section progress={progress} record={record} speak={speak} />
+          {view.at === "region" && region && (
+            <RegionScreen
+              region={region}
+              game={game}
+              progress={progress}
+              onStage={(stage) => setView({ at: "mission", region: region.id, stage: stage.id })}
+              onCodex={() => setView({ at: "codex", region: region.id })}
+              onBack={() => setView({ at: "map" })}
+            />
+          )}
+
+          {view.at === "codex" && region && (
+            <CodexScreen
+              region={region}
+              speak={speak}
+              onExit={() => setView({ at: "region", region: region.id })}
+            />
+          )}
+
+          {inMission && (
+            <Mission
+              key={region.id + ":" + view.stage}
+              region={region}
+              stage={stagesFor(region).find((s) => s.id === view.stage)}
+              progress={progress}
+              speak={speak}
+              motion={motion}
+              canvasRef={canvasRef}
+              onFinish={finishMission}
+              onExit={() => setView({ at: "region", region: region.id })}
+            />
+          )}
+
+          {view.at === "today" && (
+            <TodayScreen game={game} progress={progress} summary={summary} onRegion={goRegion} />
+          )}
+
+          {view.at === "lab" && (
+            <LabScreen
+              progress={progress}
+              persist={persist}
+              theme={theme}
+              onTheme={toggleTheme}
+              settings={game.settings}
+              onSettings={setSettings}
+            />
+          )}
+        </main>
+
+        {!inMission && (
+          <Dock
+            at={view.at === "region" || view.at === "codex" ? "map" : view.at}
+            onGo={(where) => setView({ at: where })}
+            pip={dockPip}
+          />
         )}
-        <p className="foot">
-          Progress is stored in this browser on this device — export it from Review before you switch
-          devices. Typed answers forgive accents (nacion counts for nación), but dictation requires the
-          ñ, since spelling is the whole point there. Audio asks your browser for a Mexican voice first.
-        </p>
-      </div>
+
+        {/* Particles only. Never hit-tested, never in the way. */}
+        <canvas className="fx" ref={canvasRef} aria-hidden="true" />
+
+        {streak.atRisk && view.at === "map" && !game.today.goalMet && (
+          <div className="nudge" role="status">
+            Your {streak.count}-day streak is unclaimed today
+          </div>
+        )}
       </GlossaryProvider>
     </div>
   );
+}
+
+function safeParse(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    /* unreadable progress is left alone rather than thrown away */
+    return null;
+  }
 }

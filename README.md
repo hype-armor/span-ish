@@ -9,13 +9,39 @@ An installable, offline-capable build of the Mexican Spanish drill app.
 | `index.html` | The shell: metadata, the splash, and the script tags. Nothing else. |
 | `content/` | The card decks and every word the app teaches, one readable module per topic. **Edit these.** |
 | `styles.css` | Every style in the app. |
-| `src/` | The app's source: the drill engine, the scheduler, and the sections. |
+| `src/` | The app's source: the mission engine, the scheduler, the game layer, and the screens. |
 | `app.js` | Built from `src/`. Committed so the site stays static — don't edit it by hand. |
 | `vendor/react.js` | React 18.3.1 and ReactDOM, vendored rather than loaded from a CDN. |
 | `manifest.webmanifest` | Name, icons, colours, and standalone display mode. |
 | `sw.js` | Service worker. Caches the shell so the app opens with no network. Its `CACHE` name is generated — see Republishing. |
 | `icons/` | 192 / 512 / maskable / Apple touch icons, plus an SVG favicon. |
 | `docs/learning-design.md` | Why the app drills the way it does, and the research behind it. Read before changing drill mechanics. |
+
+### How it is put together
+
+There are no tabs and there is no scrolling. The app is one fixed frame —
+a heads-up strip, a stage, and a dock — and everything happens inside it:
+
+- **La Ruta** is the map: eleven regions on a serpentine path, one per topic,
+  each opening when the one before it has had two missions cleared.
+- A **region** holds its codex (that topic's rules, tables and examples) and
+  four missions that escalate: Recon, the region's signature mode, sudden
+  death, and a boss built out of the items you personally keep missing.
+- **Hoy** is the day: the goal, the streak, three quests, and the shape of what
+  you know. **El Laboratorio** is the same schedule diagnostics as before, plus
+  export and import.
+
+Content that does not fit its screen is *paged*, never scrolled
+(`src/components/Pages.jsx`). `npm run smoke` asserts that nothing scrolls, on
+every screen, at four viewport sizes — it is the check most likely to catch a
+regression, because a long explanation or a small phone breaks the rule
+silently.
+
+The game layer is documented in [`docs/learning-design.md`](docs/learning-design.md)
+under *The game layer*, including which mechanics were deliberately not built.
+Read it before adding one: the constraint the whole design runs on is that
+every reward is a readout of the review schedule rather than a currency of its
+own.
 
 Nothing is built at deploy time and nothing loads from a CDN: `app.js` is
 committed, so the site is served exactly as it sits in the repo. The content
@@ -47,8 +73,9 @@ npm run visual                        # against HEAD
 node tools/visual-diff.js --against main
 ```
 
-Renders every tab in the working tree and in another revision and compares the
-pixels. There are no baseline images in the repo — the other side is
+Renders every screen in the working tree and in another revision and compares
+the pixels. Progression is seeded so that the regions behind it are rendered
+too — on a fresh save ten of the eleven would be locked and never compared. There are no baseline images in the repo — the other side is
 materialised from git on demand, so there is nothing to keep up to date.
 
 It exists because `app.js` is generated now, so a refactor can change what the
@@ -90,7 +117,7 @@ Two rules:
   those retires the old card and introduces a new one. Fixing a typo in a `why`
   or a translation is free; changing the answer resets that card's history.
 
-New cards appear in their own tab and in the interleaved Review deck
+New cards appear in their own region and in the interleaved Arena deck
 automatically. After editing, run `npm run build` — see Republishing.
 
 `content/glossary.js` is not a deck at all. It defines the grammar words —
@@ -102,7 +129,7 @@ and a term that appears nowhere in the app, since that one could never be clicke
 
 Not every deck is drilled. `converterExamples` and `genderExceptionTable` are
 display only — the chips under the Transformer's live converter and the
-exceptions table on the Gender tab. A word in `converterExamples` has to end in
+exceptions table in El o La's codex. A word in `converterExamples` has to end in
 one of the suffixes in the same file, or the converter will say no rule matches
 it.
 
@@ -141,11 +168,11 @@ once; after that it is hands-off.
 
 Review scheduling is kept in `localStorage` under the `mx-pwa:` prefix, on that
 device and in that browser. Installing to the home screen does *not* copy an
-existing browser profile's data, so export first from **Review → Copy progress**
+existing browser profile's data, so export first from **Lab → Copy progress**
 and paste it into the installed app if you want to carry history across.
 
 Using the app on more than one device gives you two histories that drift apart.
-**Review → Paste to restore** offers two ways to reconcile them:
+**Lab → Paste to restore** offers two ways to reconcile them:
 
 - **Merge into this device** folds the pasted history in. For an item both sides
   know, the more recent review wins — it is the freshest evidence about that

@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from "../react.js";
+import { MODES } from "../lib/game.js";
+import { burst, sfx } from "../lib/juice.js";
+import { Pages } from "./Pages.jsx";
 
-const RADIUS = 58;
+const RADIUS = 46;
 
-/* Shown when a round ends. The ring animates from zero on mount, which is why
-   the percentage is held in state rather than rendered directly. */
-export function Results({ label, results, total, best, onRestart }) {
+/* What a mission adds up to.
+ *
+ * The numbers here are deliberately in a particular order: what you got right
+ * first, what it did to the schedule second, and the game's own scoring last.
+ * XP is the least important thing on this screen and is laid out like it. */
+export function MissionResult({ region, stage, outcome, onRestart, onExit, motion, canvasRef }) {
+  const { results, won, xp, combo, flawless, cram, level, badges } = outcome;
   const right = results.filter((r) => r.right).length;
+  const total = results.length;
   const percent = total ? Math.round((right / total) * 100) : 0;
 
   const [shown, setShown] = useState(0);
@@ -14,64 +22,141 @@ export function Results({ label, results, total, best, onRestart }) {
     return () => clearTimeout(t);
   }, [percent]);
 
+  /* The burst is saved for a mission actually cleared, so it keeps meaning
+     something. With motion turned down it still fires — it just holds still. */
+  useEffect(() => {
+    if (won === false || !canvasRef || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const stop = burst(canvas, {
+      x: canvas.clientWidth / 2,
+      y: canvas.clientHeight * 0.34,
+      hue: percent >= 80 ? 145 : 214,
+      count: percent === 100 ? 70 : 44,
+      still: motion === "reduced",
+    });
+    return typeof stop === "function" ? stop : undefined;
+  }, [won, canvasRef, percent, motion]);
+
+  useEffect(() => {
+    if (level && level.after > level.before) {
+      const t = setTimeout(() => sfx.levelUp(), 420);
+      return () => clearTimeout(t);
+    }
+  }, [level]);
+
   const missed = results.filter((r) => !r.right);
   const circumference = 2 * Math.PI * RADIUS;
-  const colour = percent >= 80 ? "var(--good)" : percent >= 50 ? "var(--primary)" : "var(--bad)";
+  const colour = won === false ? "var(--bad)" : percent >= 80 ? "var(--good)" : percent >= 50 ? "var(--primary)" : "var(--accent)";
+
   const headline =
-    percent === 100 ? "Perfect round"
-    : percent >= 80 ? "Strong round"
+    won === false && stage.mode === "boss" ? "It survived"
+    : won === false ? "Run ended"
+    : percent === 100 ? "Perfect"
+    : stage.mode === "boss" ? "Boss down"
+    : percent >= 80 ? "Strong run"
     : percent >= 50 ? "Getting there"
     : "Worth another pass";
 
+  const levelled = level && level.after > level.before;
+
   return (
-    <div className="drill">
-      <div className="drill-top">
-        <div className="drill-meta">
-          <span className="drill-title">{label} · complete</span>
-        </div>
-      </div>
-
-      <div className="result">
-        <div className="ring">
-          <svg width="132" height="132">
-            <circle className="track" cx="66" cy="66" r={RADIUS} />
-            <circle
-              className="fill"
-              cx="66"
-              cy="66"
-              r={RADIUS}
-              stroke={colour}
-              strokeDasharray={circumference}
-              strokeDashoffset={circumference - (circumference * shown) / 100}
-            />
-          </svg>
-          <div className="ring-mid">
-            <div className="ring-n" style={{ color: colour }}>{percent}%</div>
-            <div className="ring-l">{right} of {total}</div>
+    <div className="mission result-screen">
+      <header className="mission-top">
+        <div className="mission-line">
+          <button className="icon-btn small" onClick={onExit} aria-label="Back to the region">‹</button>
+          <div className="mission-id">
+            <span className="mission-mode">{MODES[stage.mode].name}</span>
+            <span className="mission-where">{region.name}</span>
           </div>
+          <div className="mission-count" aria-hidden="true">✓</div>
         </div>
+      </header>
 
-        <div className="result-h">{headline}</div>
-        <p className="result-p">
-          {missed.length === 0
-            ? "Every item moved further out on the schedule. Come back when the review counter fills up."
-            : "Correct answers moved further out. The misses reset to zero and are due again now."}
-          {percent > best && percent > 0 ? " That's a new best for this drill." : ""}
-        </p>
-
-        {missed.length > 0 && (
-          <div className="requeue">
-            <div className="requeue-h">Reset and due now</div>
-            <div className="requeue-l">
-              {missed.map((m, i) => <span key={i}>{m.canon}</span>)}
+      <div className="mission-body">
+        <Pages label="these results" className="fill" grow>
+          <div className="result">
+            <div className="ring">
+              <svg width="108" height="108" viewBox="0 0 108 108">
+                <circle className="track" cx="54" cy="54" r={RADIUS} />
+                <circle
+                  className="fill"
+                  cx="54"
+                  cy="54"
+                  r={RADIUS}
+                  stroke={colour}
+                  strokeDasharray={circumference}
+                  strokeDashoffset={circumference - (circumference * shown) / 100}
+                />
+              </svg>
+              <div className="ring-mid">
+                <div className="ring-n" style={{ color: colour }}>{percent}%</div>
+                <div className="ring-l">{right} of {total}</div>
+              </div>
             </div>
-          </div>
-        )}
 
-        <div className="actions" style={{ justifyContent: "center" }}>
-          <button className="btn" onClick={onRestart}>Another round</button>
-        </div>
+            <div className="result-h">{headline}</div>
+
+            {levelled && (
+              <div className="levelup" role="status">
+                Level {level.after} — <b>{level.title}</b>
+              </div>
+            )}
+
+            <div className="tally">
+              <div className="tally-cell">
+                <span className="tally-n">+{xp}</span>
+                <span className="tally-l">XP</span>
+              </div>
+              <div className="tally-cell">
+                <span className="tally-n">{combo}</span>
+                <span className="tally-l">best run</span>
+              </div>
+              <div className="tally-cell">
+                <span className="tally-n">{right}</span>
+                <span className="tally-l">pushed out</span>
+              </div>
+            </div>
+
+            {cram && (
+              <p className="result-note warn">
+                Almost nothing here was due yet, so this was practice rather than review — the XP is
+                a quarter of the usual. Reviewing early does not do much for a memory that has not
+                started to fade.
+              </p>
+            )}
+
+            {flawless && !cram && <p className="result-note good">Not a single miss. Bonus paid.</p>}
+
+            <p className="result-p">
+              {missed.length === 0
+                ? "Every item moved further out on the schedule."
+                : "Correct answers moved further out. The misses reset to zero and are due again now."}
+            </p>
+
+            {badges && badges.length > 0 && (
+              <div className="badges-won">
+                {badges.map((b) => (
+                  <span key={b.id} className="badge-chip">🏅 {b.text}</span>
+                ))}
+              </div>
+            )}
+
+            {missed.length > 0 && (
+              <div className="requeue">
+                <div className="requeue-h">Reset and due now</div>
+                <div className="requeue-l">
+                  {missed.map((m, i) => <span key={i}>{Array.isArray(m.canon) ? m.canon[0] : m.canon}</span>)}
+                </div>
+              </div>
+            )}
+          </div>
+        </Pages>
       </div>
+
+      <footer className="mission-foot">
+        <button className="btn" onClick={onRestart}>Run it again</button>
+        <button className="btn ghost" onClick={onExit}>Back to {region.name}</button>
+      </footer>
     </div>
   );
 }

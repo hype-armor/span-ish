@@ -274,5 +274,228 @@ const srs = load("src/lib/srs.js");
     throws(() => cn.shellFiles('const CACHE = "x";')), "sw.js: could not find the SHELL list");
 }
 
+/* ---------- the game layer ---------- */
+
+/* This is the half of the app with the strongest pull towards being wrong in
+   a flattering direction. Every rule here exists to stop a number going up
+   for something that was not learning, so the tests are mostly about what
+   does *not* pay out. */
+{
+  const g = load("src/lib/game.js");
+  const DAY = 864e5;
+  const at = (key, hour = 12) => new Date(`${key}T${String(hour).padStart(2, "0")}:00:00`).getTime();
+
+  /* --- XP is paid for scheduled retrievals, and only for those --- */
+
+  check("a due item pays full", g.xpForAnswer({ right: true, wasDue: true, combo: 0 }), g.XP_DUE);
+  check("an early one pays a token", g.xpForAnswer({ right: true, wasDue: false, combo: 0 }), g.XP_EARLY);
+  check("a miss still pays something, because a miss with feedback teaches",
+    g.xpForAnswer({ right: false, wasDue: true, combo: 9 }), g.XP_MISS);
+  check("the combo multiplies a due answer and nothing else", [
+    g.xpForAnswer({ right: true, wasDue: true, combo: 9 }),
+    g.xpForAnswer({ right: true, wasDue: false, combo: 9 }),
+  ], [g.XP_DUE * 4, g.XP_EARLY]);
+  check("the multiplier is capped", [g.comboMultiplier(0), g.comboMultiplier(9), g.comboMultiplier(300)], [1, 4, 4]);
+
+  const due = (n) => Array.from({ length: n }, (_, i) => ({ id: "d" + i, right: true, wasDue: true }));
+  const early = (n) => Array.from({ length: n }, (_, i) => ({ id: "e" + i, right: true, wasDue: false }));
+
+  check("a round of mostly-unscheduled material is cram", g.isCram(early(9).concat(due(1))), true);
+  check("a round of scheduled material is not", g.isCram(due(6).concat(early(4))), false);
+  check("an empty round is not cram either", g.isCram([]), false);
+
+  {
+    /* The same ten right answers, worth wildly different amounts depending on
+       whether the scheduler asked for them. */
+    const now = at("2025-03-10");
+    const real = g.recordMission(g.freshGame(now), { answers: due(10), mode: "plain", region: "rules", stage: "recon", score: { won: true }, now });
+    const crammed = g.recordMission(g.freshGame(now), { answers: early(10), mode: "plain", region: "rules", stage: "recon", score: { won: true }, now });
+    check("replaying easy material earns a fraction of doing the work", crammed.xp < real.xp / 5, true);
+    check("and only scheduled answers count towards the day's goal",
+      [real.game.today.due, crammed.game.today.due], [10, 0]);
+  }
+
+  /* --- the streak counts days the work was done --- */
+
+  {
+    let game = g.freshGame(at("2025-03-01"));
+    game = g.markGoal(game, at("2025-03-01"));
+    check("meeting the goal starts a streak", game.streak.count, 1);
+    game = g.markGoal(game, at("2025-03-01", 22));
+    check("meeting it twice in one day does not count twice", game.streak.count, 1);
+    game = g.markGoal(game, at("2025-03-02"));
+    check("the next day continues it", game.streak.count, 2);
+
+    /* A missed day spends a banked grace day rather than ending it. A streak
+       that shatters on the first bad day stops being worth protecting. */
+    const skipped = g.markGoal(game, at("2025-03-04"));
+    check("one missed day is survivable while a grace day is banked", [skipped.streak.count, skipped.streak.freezes], [3, 0]);
+    check("two missed days are not", g.markGoal(game, at("2025-03-05")).streak.count, 1);
+    check("and neither is one with nothing banked", g.markGoal(skipped, at("2025-03-06")).streak.count, 1);
+  }
+
+  {
+    /* Seven days in a row earns the grace day back. */
+    let game = g.freshGame(at("2025-05-01"));
+    for (let d = 1; d <= 7; d++) game = g.markGoal(game, at(`2025-05-0${d}`));
+    check("a week of work banks a grace day", [game.streak.count, game.streak.freezes], [7, 2]);
+  }
+
+  {
+    const game = g.markGoal(g.freshGame(at("2025-03-01")), at("2025-03-01"));
+    check("a streak claimed today is safe", g.streakStatus(game, at("2025-03-01", 23)).atRisk, false);
+    check("yesterday's is alive but unclaimed", g.streakStatus(game, at("2025-03-02")).atRisk, true);
+    check("older than the grace allows is gone", g.streakStatus(game, at("2025-03-09")).alive, false);
+    check("and reports what was lost rather than pretending", g.streakStatus(game, at("2025-03-09")).lost, 1);
+  }
+
+  check("days are counted on the calendar, not in milliseconds", [
+    g.daysBetween("2025-03-01", "2025-03-02"),
+    g.daysBetween("2025-03-09", "2025-03-10"), // a daylight-saving boundary in the US
+    g.daysBetween("2025-12-31", "2026-01-01"),
+  ], [1, 1, 1]);
+
+  /* --- the level is made of mastery, which cannot be ground --- */
+
+  const items = (spec) => Object.fromEntries(spec.map(([id, over], i) => [id, {
+    right: 1, wrong: 0, streak: 1, ease: 2.4, interval: 0, due: 0, last: 1, lapses: 0, ...over,
+  }]));
+
+  check("rank reads straight off the schedule", [
+    g.rankOf(undefined),
+    g.rankOf({ right: 0, wrong: 0, streak: 0, interval: 0 }),
+    g.rankOf({ right: 3, wrong: 2, streak: 0, interval: 0 }),
+    g.rankOf({ right: 3, wrong: 0, streak: 3, interval: 5 }),
+    g.rankOf({ right: 4, wrong: 0, streak: 4, interval: 12 }),
+    g.rankOf({ right: 6, wrong: 0, streak: 6, interval: 30 }),
+    g.rankOf({ right: 9, wrong: 0, streak: 9, interval: 90 }),
+  ], ["unseen", "unseen", "shaky", "learning", "solid", "mature", "burnished"]);
+
+  {
+    const ids = ["a", "b", "c"];
+    const shallow = items([["a", { interval: 1 }], ["b", { interval: 1 }], ["c", { interval: 1 }]]);
+    const deep = items([["a", { interval: 40 }], ["b", { interval: 40 }], ["c", { interval: 40 }]]);
+    check("answering the same three cards forever cannot raise the level",
+      g.masteryPoints(shallow, ids) < g.masteryPoints(deep, ids), true);
+    check("mastery ignores ids the app no longer has", g.masteryPoints(deep, ["a", "gone"]), 7);
+  }
+
+  check("levels are a widening ladder", [1, 12, 48, 108, 300].map(g.levelFor), [1, 2, 3, 4, 6]);
+  check("and the floor of a level is the points it took", g.pointsForLevel(g.levelFor(48)), 48);
+
+  /* --- what is open --- */
+
+  const cleared = (pairs) => ({
+    ...g.freshGame(0),
+    regions: Object.fromEntries(pairs.map(([id, n]) => [id, {
+      stages: Object.fromEntries(["recon", "signature", "sudden", "boss"].slice(0, n).map((s) => [s, { cleared: true, best: 0, runs: 1 }])),
+    }])),
+  });
+
+  check("a fresh save opens exactly one region", [...g.unlockedRegions(g.freshGame(0))], ["rules"]);
+  check("one cleared mission is not enough to move on", [...g.unlockedRegions(cleared([["rules", 1]]))], ["rules"]);
+  check("two are", [...g.unlockedRegions(cleared([["rules", 2]]))].includes("suffix"), true);
+  check("but only for the region actually behind the next one",
+    [...g.unlockedRegions(cleared([["sound", 4]]))], ["rules"]);
+  check("the Arena waits for four regions", [
+    g.unlockedRegions(cleared([["rules", 2], ["suffix", 2], ["sound", 2]])).has("arena"),
+    g.unlockedRegions(cleared([["rules", 2], ["suffix", 2], ["sound", 2], ["verbs", 2]])).has("arena"),
+  ], [false, true]);
+
+  check("a mission's stages open in order", [
+    g.stageOpen(g.freshGame(0), "rules", 0),
+    g.stageOpen(g.freshGame(0), "rules", 1),
+    g.stageOpen(cleared([["rules", 1]]), "rules", 1),
+  ], [true, false, true]);
+
+  {
+    /* Sudden death has to be survived, or dying on the first card would clear
+       the stage that dying was supposed to fail. */
+    const now = at("2025-04-01");
+    const died = g.recordMission(g.freshGame(now), {
+      answers: [{ id: "a", right: false, wasDue: true }], mode: "sudden",
+      region: "rules", stage: "sudden", score: { won: false, value: 0 }, now,
+    });
+    check("a run that was lost does not clear its stage", died.game.regions.rules.stages.sudden.cleared, false);
+    check("  but it is still recorded as attempted", died.game.regions.rules.stages.sudden.runs, 1);
+    const survived = g.recordMission(died.game, {
+      answers: due(4), mode: "sudden", region: "rules", stage: "sudden", score: { won: true, value: 4 }, now,
+    });
+    check("a run that was survived clears it", survived.game.regions.rules.stages.sudden.cleared, true);
+  }
+
+  /* --- quests --- */
+
+  {
+    const monday = g.questsFor("2025-06-02");
+    check("a day's quests are the same every time it is asked",
+      monday.map((q) => q.id), g.questsFor("2025-06-02").map((q) => q.id));
+    check("there are three", monday.length, 3);
+    check("no two of them measure the same counter",
+      new Set(monday.map((q) => q.track)).size, 3);
+    const week = ["2025-06-02", "2025-06-03", "2025-06-04", "2025-06-05"].map((d) => g.questsFor(d).map((q) => q.id).join());
+    check("and they are not the same every day", new Set(week).size > 1, true);
+  }
+
+  {
+    const game = { ...g.freshGame(0), today: { ...g.freshGame(0).today, due: 12 } };
+    const quest = g.questProgress(game, { id: "x", track: "due", target: 12, text: "" });
+    check("a quest reads its counter off the day", [quest.have, quest.done, quest.fraction], [12, true, 1]);
+  }
+
+  /* --- badges --- */
+
+  {
+    const snapshot = { missions: 1, flawless: 0, bosses: 0, streak: 0, level: 1, mature: 0, unlocked: 1, met: 0, due: 0 };
+    const first = g.awardBadges(g.freshGame(0), snapshot);
+    check("a badge is awarded once", first.won.map((b) => b.id), ["first"]);
+    check("and not again", g.awardBadges(first.game, snapshot).won, []);
+  }
+
+  /* --- reading a save written by an older version --- */
+
+  {
+    const now = at("2025-07-01");
+    check("nothing at all becomes a fresh game", g.normaliseGame(undefined, now).streak.count, 0);
+    check("junk does too", g.normaliseGame("not an object", now).xp, 0);
+    const salvaged = g.normaliseGame({
+      xp: "600", badges: ["first", 7], regions: { rules: { stages: { recon: { cleared: 1 } } }, atlantis: { stages: {} } },
+      streak: { count: 4, freezes: 99 }, settings: { motion: "sideways" },
+    }, now);
+    check("a number written as a string is still a number", salvaged.xp, 600);
+    check("a badge that is not a name is dropped", salvaged.badges, ["first"]);
+    check("a region the app no longer has is dropped", Object.keys(salvaged.regions), ["rules"]);
+    check("an impossible number of grace days is clamped", salvaged.streak.freezes, g.MAX_FREEZES);
+    check("an unknown setting falls back", salvaged.settings.motion, "full");
+    check("and the streak's best is inferred when it was never stored", salvaged.streak.best, 4);
+  }
+
+  {
+    const now = at("2025-08-01");
+    const game = { ...g.freshGame(now), today: { ...g.freshGame(now).today, due: 9, xp: 40 } };
+    check("a new day clears the day's counters", g.rollDay(game, now + DAY).today.due, 0);
+    check("  and leaves the streak to be judged by its date", g.rollDay(game, now + DAY).streak, game.streak);
+    check("the same day changes nothing", g.rollDay(game, now + 60e3), game);
+  }
+
+  /* --- merging two devices --- */
+
+  {
+    const mine = { ...g.freshGame(at("2025-09-01")), xp: 100, badges: ["first"] };
+    const theirs = {
+      ...g.freshGame(at("2025-09-01")), xp: 40, badges: ["boss"],
+      streak: { count: 6, best: 6, last: "2025-09-01", freezes: 1 },
+      regions: { rules: { stages: { recon: { cleared: true, best: 80, runs: 3 } } } },
+    };
+    const merged = g.mergeGame(mine, theirs);
+    check("merging takes the larger counter", merged.xp, 100);
+    check("badges are the union of both", merged.badges.sort(), ["boss", "first"]);
+    check("a stage cleared anywhere is cleared", merged.regions.rules.stages.recon.cleared, true);
+    check("the streak comes from whichever device reported later", merged.streak.count, 6);
+    check("merging the same export twice changes nothing the second time",
+      g.mergeGame(merged, theirs), merged);
+  }
+}
+
 if (failures) { console.error(`\n${failures} failure${failures === 1 ? "" : "s"}`); process.exit(1); }
 console.log("\nlib OK");

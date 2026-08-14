@@ -8,7 +8,11 @@ export function Speak({ text, speak, label }) {
   );
 }
 
-/* Every reference table in the app. The wrapper is what scrolls on a phone. */
+/* Every reference table in the app.
+ *
+ * Rows are marked as break points so that a table longer than the screen is
+ * paged between rows rather than cut through the middle of one — see
+ * Pages.jsx, which does the paging. Nothing here scrolls. */
 export function Table({ head, children }) {
   return (
     <div className="tablewrap">
@@ -16,7 +20,11 @@ export function Table({ head, children }) {
         <thead>
           <tr>{head.map((h, i) => <th key={i}>{h}</th>)}</tr>
         </thead>
-        <tbody>{children}</tbody>
+        <tbody>
+          {React.Children.map(children, (row) =>
+            React.isValidElement(row) ? React.cloneElement(row, { "data-break": "" }) : row,
+          )}
+        </tbody>
       </table>
     </div>
   );
@@ -27,8 +35,26 @@ export function Table({ head, children }) {
    someone remembered to mark it up. */
 export function Lede({ children, style }) {
   return (
-    <p className="lede" style={style}>
+    <p className="lede" style={style} data-break="">
       <Glossed>{children}</Glossed>
     </p>
+  );
+}
+
+/* A heading inside a codex entry. Also a legal place for a page to end. */
+export function Head({ children }) {
+  return <h3 data-break="">{children}</h3>;
+}
+
+/* The small stat/reference cards, in a grid that reflows down to one column. */
+export function Cards({ cols = 3, children }) {
+  return <div className={"grid g" + cols}>{children}</div>;
+}
+
+export function Card({ children, className = "", style }) {
+  return (
+    <div className={"card " + className} style={style} data-break="">
+      {children}
+    </div>
   );
 }
