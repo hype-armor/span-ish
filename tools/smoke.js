@@ -61,6 +61,19 @@ let failures = 0;
 const fail = (msg) => { console.error("  ✗ " + msg); failures++; };
 const pass = (msg) => console.log("  ✓ " + msg);
 
+/* The webfont is blocked everywhere in this harness, so every machine measures
+   the same thing.
+ *
+ * It is not cosmetic. Whether Plus Jakarta Sans loads changes line heights by
+ * a pixel or two, and the fit checks are answered in pixels — which is how a
+ * results screen that fits on a laptop came to clip 2px in CI. Blocking it
+ * also measures the more conservative case: the fallback stack is what a
+ * first, offline visit actually gets. */
+async function noWebfont(context) {
+  await context.route("**://fonts.googleapis.com/**", (r) => r.abort());
+  await context.route("**://fonts.gstatic.com/**", (r) => r.abort());
+}
+
 /* A save with every region opened, so the parts of the app that live behind
    progression can be reached without playing through to them.
 
@@ -162,6 +175,7 @@ async function assertScrolls(page, where) {
   const launch = process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {};
   const browser = await chromium.launch(launch);
   const page = await browser.newPage({ viewport: { width: 1000, height: 1200 } });
+  await noWebfont(page.context());
 
   const errors = [];
   page.on("pageerror", (e) => errors.push("uncaught: " + e.message));
@@ -375,6 +389,7 @@ async function assertScrolls(page, where) {
   /* ---------- the option buttons, on a save with everything open ---------- */
 
   const seeded = await browser.newContext({ viewport: { width: 1000, height: 1200 } });
+  await noWebfont(seeded);
   await seeded.addInitScript((save) => {
     try { localStorage.setItem("mx-pwa:mx:progress", save); } catch { /* private window */ }
   }, UNLOCKED);
@@ -849,6 +864,7 @@ async function assertScrolls(page, where) {
       hasTouch: true, isMobile: true,
       userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
     });
+    await noWebfont(phone);
     await phone.addInitScript((save) => {
       try { localStorage.setItem("mx-pwa:mx:progress", save); } catch { /* private window */ }
     }, UNLOCKED);

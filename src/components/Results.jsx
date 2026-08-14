@@ -144,11 +144,13 @@ export function MissionResult({ region, stage, outcome, onRestart, onExit, motio
 
             {flawless && !cram && <p className="result-note good">Not a single miss. Bonus paid.</p>}
 
-            <p className="result-p">
-              {missed.length === 0
-                ? "Every item moved further out on the schedule."
-                : "Correct answers moved further out. The misses reset to zero and are due again now."}
-            </p>
+            {/* Only when there is no list below saying the same thing. With
+                misses, "Reset and due now" is the heading of the block that
+                follows and this sentence is two lines of restating it — which
+                is also the two lines the screen could least afford. */}
+            {missed.length === 0 && (
+              <p className="result-p">Every item moved further out on the schedule.</p>
+            )}
 
             {spoils.length > 0 && (
               <div className="badges-won">
