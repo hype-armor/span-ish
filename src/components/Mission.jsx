@@ -182,13 +182,8 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
     settle(option === card.a, option);
   };
 
-  /* ---------- the clock ---------- */
-
-  /* The countdown lives in its own component on purpose. Held here, its tick
-     re-rendered the whole card ten times a second — which also tore down and
-     rebuilt the pager's ResizeObserver on every tick, so a timed mission was
-     re-measuring its own layout continuously for a bar four pixels tall. */
-
+  /* The damage number, which is on screen for as long as it takes to read.
+     (The clock is a component of its own — see Clock, below.) */
   useEffect(() => {
     if (!flash) return;
     const t = setTimeout(() => setFlash(null), 700);
