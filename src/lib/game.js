@@ -236,6 +236,9 @@ export function freshDay(key) {
 
 export function freshGame(now = 0) {
   return {
+    /* Whether the app still owes an explanation of itself. Set false the
+       first time somebody is shown one. */
+    intro: true,
     xp: 0,
     today: freshDay(dayKey(now)),
     streak: { count: 0, best: 0, last: null, freezes: 1 },
@@ -270,6 +273,7 @@ export function normaliseGame(raw, now = 0) {
   const settings = raw.settings && typeof raw.settings === "object" ? raw.settings : {};
 
   return {
+    intro: raw.intro !== false,
     xp: Number(raw.xp) || 0,
     today: { ...freshDay(String(today.key || base.today.key)), ...numeric(today) },
     streak: {
@@ -576,6 +580,8 @@ export function mergeGame(mine, theirs) {
     daysBetween(mine.streak.last, theirs.streak.last) > 0 ? theirs.streak : mine.streak;
 
   return {
+    /* Explained on either device is explained. */
+    intro: mine.intro && theirs.intro,
     xp: Math.max(mine.xp, theirs.xp),
     /* The day's counters are local to a device and to a date; taking the
        larger of two different days would invent a day that never happened. */

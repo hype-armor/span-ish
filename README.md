@@ -22,6 +22,9 @@ An installable, offline-capable build of the Mexican Spanish drill app.
 There are no tabs and there is no scrolling. The app is one fixed frame —
 a heads-up strip, a stage, and a dock — and everything happens inside it:
 
+- A **first run** opens on one screen that says what the app is and how it
+  works, then never shows it again. The old masthead said that on every screen
+  forever; a map of glyphs says nothing at all.
 - **La Ruta** is the map: eleven regions on a serpentine path, one per topic,
   each opening when the one before it has had two missions cleared.
 - A **region** holds its codex (that topic's rules, tables and examples) and

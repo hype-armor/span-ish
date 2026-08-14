@@ -246,6 +246,29 @@ body {
   font-size: 9.5px; font-weight: 800; padding: 1px 5px; line-height: 1.35;
 }
 
+/* ---------- the intro ---------- */
+
+.intro { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 8px 0; }
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 7px; align-self: flex-start;
+  font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--accent); background: var(--accent-tint);
+  padding: 4px 10px; border-radius: 999px; margin: 0 0 12px;
+}
+.intro h1 {
+  font-size: clamp(25px, 7vw, 38px); font-weight: 800; letter-spacing: -.03em;
+  line-height: 1.1; margin: 0 0 14px; max-width: 18ch;
+}
+.intro h1 span { color: var(--primary); }
+.intro .lede { margin-bottom: 18px; }
+.intro-points { display: grid; gap: 10px; }
+.intro-point {
+  border-left: 3px solid var(--line); padding-left: 12px;
+}
+.intro-point b { display: block; font-size: 13.5px; font-weight: 700; }
+.intro-point span { display: block; font-size: 13px; line-height: 1.55; color: var(--muted); margin-top: 3px; }
+.intro-foot { padding-bottom: 14px; }
+
 /* ---------- the map ---------- */
 
 .map-screen { padding: clamp(6px, 2vw, 14px) clamp(10px, 3vw, 22px) clamp(4px, 1.5vw, 10px); }

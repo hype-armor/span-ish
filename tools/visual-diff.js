@@ -100,7 +100,7 @@ const SAVE = JSON.stringify({
       ["rules", "suffix", "sound", "verbs", "past", "periphrasis", "subjunctive", "gender", "mexicanismos", "connectors", "arena"]
         .map((id) => [id, { stages: Object.fromEntries(["recon", "signature", "sudden", "boss"].map((s) => [s, { cleared: true, best: 1, runs: 1 }])) }]),
     ),
-    badges: [], settings: { motion: "reduced", sound: false, haptics: false },
+    badges: [], intro: true, settings: { motion: "reduced", sound: false, haptics: false },
   },
 });
 
@@ -124,7 +124,7 @@ async function capture(browser, port, label) {
 
   await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded" });
   await page.addStyleTag({ content: "*,*::before,*::after{animation:none!important;transition:none!important}" });
-  await page.waitForSelector(".map-screen .node", { timeout: 15000 });
+  await page.waitForSelector(".intro-screen", { timeout: 15000 });
   await page.waitForTimeout(700);
 
   const shots = new Map();
@@ -132,6 +132,12 @@ async function capture(browser, port, label) {
     await page.waitForTimeout(320);
     shots.set(name, await page.screenshot());
   };
+
+  /* The intro is a real screen and only appears on a first run, so it is
+     captured before it is dismissed or it would never be compared at all. */
+  await shoot("intro");
+  await page.click('.intro-foot button:has-text("Look around")');
+  await page.waitForSelector(".map-screen .node", { timeout: 10000 });
 
   const home = async (where) => {
     await page.click(`.dock-btn[aria-label^="${where}"]`);
