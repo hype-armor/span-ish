@@ -414,7 +414,7 @@ body {
 .clock > i { display: block; height: 100%; background: var(--good); border-radius: 999px; transition: width .1s linear; }
 .clock[data-low="true"] > i { background: var(--bad); }
 
-.bossbar { margin-top: 10px; position: relative; display: flex; align-items: center; gap: 10px; }
+.bossbar { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
 .bosshp { flex: 1; height: 12px; border-radius: 999px; background: var(--line); overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,.12); }
 .bosshp > i {
   display: block; height: 100%; border-radius: 999px;
@@ -424,10 +424,11 @@ body {
 .hearts { display: flex; gap: 3px; flex: none; }
 .heart { font-size: 13px; color: var(--line); line-height: 1; }
 .heart[data-on="true"] { color: var(--bad); }
-.flash {
-  position: absolute; right: 46px; top: -16px; font-size: 15px; font-weight: 800;
-  animation: rise-away .7s ease-out both; pointer-events: none;
+.flash-slot {
+  flex: none; width: 34px; text-align: right; font-size: 14px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
+.flash { display: inline-block; animation: rise-away .7s ease-out both; pointer-events: none; }
 .flash-hit { color: var(--bad); }
 .flash-heal { color: var(--good); }
 @keyframes rise-away {
