@@ -158,13 +158,18 @@ export function burst(canvas, { x, y, count = 46, hue = 214, still = false }) {
     let alive = false;
     for (const b of bits) {
       if (b.life <= 0) continue;
-      alive = true;
       b.x += b.vx;
       b.y += b.vy;
       b.vy += 0.16; // gravity
       b.vx *= 0.985;
       b.life -= b.decay;
-      g.globalAlpha = Math.max(0, b.life);
+      /* Checked again after the decrement, not only before it. A particle that
+         died this frame has a negative life, and arc() throws on a negative
+         radius rather than drawing nothing — which aborts the rest of the
+         frame along with it. */
+      if (b.life <= 0) continue;
+      alive = true;
+      g.globalAlpha = b.life;
       g.fillStyle = `hsl(${b.hue} 72% 56%)`;
       g.beginPath();
       g.arc(b.x, b.y, b.size * b.life, 0, TAU);

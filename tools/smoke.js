@@ -61,6 +61,19 @@ let failures = 0;
 const fail = (msg) => { console.error("  ✗ " + msg); failures++; };
 const pass = (msg) => console.log("  ✓ " + msg);
 
+/* The webfont is blocked everywhere in this harness, so every machine measures
+   the same thing.
+ *
+ * It is not cosmetic. Whether Plus Jakarta Sans loads changes line heights by
+ * a pixel or two, and the fit checks are answered in pixels — which is how a
+ * results screen that fits on a laptop came to clip 2px in CI. Blocking it
+ * also measures the more conservative case: the fallback stack is what a
+ * first, offline visit actually gets. */
+async function noWebfont(context) {
+  await context.route("**://fonts.googleapis.com/**", (r) => r.abort());
+  await context.route("**://fonts.gstatic.com/**", (r) => r.abort());
+}
+
 /* A save with every region opened, so the parts of the app that live behind
    progression can be reached without playing through to them.
 
@@ -100,6 +113,27 @@ async function assertPageFixed(page, where) {
   return bad.length === 0;
 }
 
+/* Wait for the entrance animations to land before measuring anything.
+ *
+ * A card arrives with `transform: translateY(10px)`, and a transform counts
+ * towards its parent's scrollable overflow — so a screen measured two thirds
+ * of the way through its own animation reports a couple of pixels of overflow
+ * that will not exist a moment later. That is how a results screen with 1000px
+ * of room to spare came to "clip 2px" on a slower machine.
+ *
+ * Infinite animations are skipped, or this would wait forever on the pulsing
+ * play button. */
+async function settled(page) {
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect && a.effect.getTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => {})),
+    ),
+  ).catch(() => {});
+}
+
 /* Rule two, on a card: everything the question needs is on screen at once.
    Checked as "nothing is clipped", which catches both a scrollbar and the
    quieter failure — content cut off by `overflow: hidden` with no way to
@@ -111,6 +145,7 @@ async function assertPageFixed(page, where) {
    line box, and it is painted in full. Flagging that reports a layout fact as
    a lost sentence. */
 async function assertCardFits(page, where) {
+  await settled(page);
   const bad = await page.evaluate(() => {
     const out = [];
     const card = document.querySelector(".mission");
@@ -162,6 +197,7 @@ async function assertScrolls(page, where) {
   const launch = process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {};
   const browser = await chromium.launch(launch);
   const page = await browser.newPage({ viewport: { width: 1000, height: 1200 } });
+  await noWebfont(page.context());
 
   const errors = [];
   page.on("pageerror", (e) => errors.push("uncaught: " + e.message));
@@ -310,15 +346,10 @@ async function assertScrolls(page, where) {
       fail(`a first mission reported no badge (${won.join(", ") || "nothing"})`);
     } else pass("and it reports what the run won");
   }
-  /* The results screen is a report, not a question: it scrolls, and the only
-     rule it owes is that the footer does not go with it. */
+  /* The results screen fits too. It is the end of a mission, and a mission is
+     a thing that fits. */
   await assertPageFixed(page, "the results screen");
-  await assertScrolls(page, "the results screen");
-  {
-    const footer = await page.$eval(".mission-foot", (e) => e.getBoundingClientRect().bottom <= window.innerHeight + 1);
-    if (!footer) fail("the results footer is off the bottom of the window");
-    else pass("the results screen keeps its footer while the report scrolls");
-  }
+  if (await assertCardFits(page, "the results screen")) pass("the results screen fits");
 
   /* clearing a mission has to open the next one */
   await page.click('.mission-foot button:has-text("Back to")');
@@ -380,6 +411,7 @@ async function assertScrolls(page, where) {
   /* ---------- the option buttons, on a save with everything open ---------- */
 
   const seeded = await browser.newContext({ viewport: { width: 1000, height: 1200 } });
+  await noWebfont(seeded);
   await seeded.addInitScript((save) => {
     try { localStorage.setItem("mx-pwa:mx:progress", save); } catch { /* private window */ }
   }, UNLOCKED);
@@ -507,6 +539,53 @@ async function assertScrolls(page, where) {
     }
 
     if (clean) pass(`${checked} cards fit ${SMALL.width}×${SMALL.height} answered and unanswered`);
+
+    /* And the worst results screen the app can produce, at the same size: a
+       long run answered badly, which is what the caps on the two lists are
+       for. A twelve-card Arena run misses most of them, and picks up a badge
+       and a level on the way. */
+    await open.click('.dock-btn[aria-label^="Ruta"]');
+    await open.waitForTimeout(120);
+    await open.click('.map-cell:has(.node-label:text-is("La Arena")) .node');
+    await open.waitForSelector(".region-screen", { timeout: 5000 });
+    await open.click(".stage-btn:not([disabled])");
+    await open.waitForSelector(".mission", { timeout: 5000 });
+
+    for (let i = 0; i < 30; i++) {
+      const opts = await open.$$(".opt:not([disabled]), .ambush-opt:not([disabled])");
+      const input = await open.$("input.answer-input:not([disabled])");
+      if (opts.length) await opts[0].click();
+      else if (input) await open.click(`.mission-foot button:has-text("I don't know")`);
+      else break;
+      await open.waitForTimeout(120);
+      const next = await open.$(".mission-foot button");
+      if (!next) break;
+      await next.click();
+      await open.waitForTimeout(150);
+      if (await open.$(".result")) break;
+    }
+
+    if (!(await open.$(".result"))) fail("the long run never reached its results");
+    else {
+      const shape = await open.evaluate(() => ({
+        missed: document.querySelectorAll(".requeue-l span").length,
+        capped: !!document.querySelector(".requeue-l .more"),
+        spoils: document.querySelectorAll(".badge-chip").length,
+      }));
+      if (await assertCardFits(open, `a bad ${SMALL.width}×${SMALL.height} run's results`)) {
+        pass(`the worst results screen fits too (${shape.missed} chips, ${shape.spoils} won)`);
+      }
+      /* The cap only proves itself when it is reached; a lucky run is not a
+         failure, it just did not test this. */
+      if (shape.capped) pass("  and a list longer than the cap says how much more there was");
+      else if (shape.missed > 6) fail("more misses than the cap, but nothing summarising the rest");
+    }
+
+    const leave = await open.$('.mission-foot button:has-text("Back to")');
+    if (leave) await leave.click();
+    else await open.click('.icon-btn[aria-label="Leave this mission"]');
+    await open.waitForSelector(".region-screen", { timeout: 5000 });
+
     await open.setViewportSize({ width: 1000, height: 1200 });
     await open.waitForTimeout(220);
   }
@@ -807,6 +886,7 @@ async function assertScrolls(page, where) {
       hasTouch: true, isMobile: true,
       userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
     });
+    await noWebfont(phone);
     await phone.addInitScript((save) => {
       try { localStorage.setItem("mx-pwa:mx:progress", save); } catch { /* private window */ }
     }, UNLOCKED);

@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from "../react.js";
 import { MODES } from "../lib/game.js";
 import { burst, sfx } from "../lib/juice.js";
-import { Scroll } from "./Scroll.jsx";
 
 const RADIUS = 46;
+
+/* How much of a variable-length list the screen will show before summarising
+   the rest. The results screen does not scroll — it is the end of a mission,
+   and a mission is a thing that fits — so the two lists that have no natural
+   length are given one. Nothing is lost by the cap: every missed item is due
+   again immediately and comes back on its own. */
+const MISSES_SHOWN = 6;
+const WON_SHOWN = 4;
 
 /* What a mission adds up to.
  *
@@ -45,6 +52,17 @@ export function MissionResult({ region, stage, outcome, onRestart, onExit, motio
   }, [level]);
 
   const missed = results.filter((r) => !r.right);
+  const missedShown = missed.slice(0, MISSES_SHOWN);
+  const missedRest = missed.length - missedShown.length;
+
+  /* Quests and badges are the same kind of thing on this screen — something
+     the run won — so they share one row and one cap. */
+  const spoils = [
+    ...(quests || []).map((q) => ({ key: "q:" + q.id, kind: "quest", text: `✓ ${q.text}` })),
+    ...(badges || []).map((b) => ({ key: "b:" + b.id, kind: "badge", text: `🏅 ${b.text}` })),
+  ];
+  const spoilsShown = spoils.slice(0, WON_SHOWN);
+  const spoilsRest = spoils.length - spoilsShown.length;
   const circumference = 2 * Math.PI * RADIUS;
   const colour = won === false ? "var(--bad)" : percent >= 80 ? "var(--good)" : percent >= 50 ? "var(--primary)" : "var(--accent)";
 
@@ -73,7 +91,6 @@ export function MissionResult({ region, stage, outcome, onRestart, onExit, motio
       </header>
 
       <div className="mission-body report">
-        <Scroll label="these results" fill>
           <div className="result">
             <div className="ring">
               <svg width="108" height="108" viewBox="0 0 108 108">
@@ -127,33 +144,38 @@ export function MissionResult({ region, stage, outcome, onRestart, onExit, motio
 
             {flawless && !cram && <p className="result-note good">Not a single miss. Bonus paid.</p>}
 
-            <p className="result-p">
-              {missed.length === 0
-                ? "Every item moved further out on the schedule."
-                : "Correct answers moved further out. The misses reset to zero and are due again now."}
-            </p>
+            {/* Only when there is no list below saying the same thing. With
+                misses, "Reset and due now" is the heading of the block that
+                follows and this sentence is two lines of restating it — which
+                is also the two lines the screen could least afford. */}
+            {missed.length === 0 && (
+              <p className="result-p">Every item moved further out on the schedule.</p>
+            )}
 
-            {((quests && quests.length > 0) || (badges && badges.length > 0)) && (
+            {spoils.length > 0 && (
               <div className="badges-won">
-                {(quests || []).map((q) => (
-                  <span key={q.id} className="badge-chip quest-chip">✓ {q.text}</span>
+                {spoilsShown.map((w) => (
+                  <span key={w.key} className={"badge-chip" + (w.kind === "quest" ? " quest-chip" : "")}>
+                    {w.text}
+                  </span>
                 ))}
-                {(badges || []).map((b) => (
-                  <span key={b.id} className="badge-chip">🏅 {b.text}</span>
-                ))}
+                {spoilsRest > 0 && <span className="badge-chip more">+{spoilsRest} more</span>}
               </div>
             )}
 
             {missed.length > 0 && (
               <div className="requeue">
-                <div className="requeue-h">Reset and due now</div>
+                <div className="requeue-h">
+                  Reset and due now
+                  {missedRest > 0 && <b> · {missed.length} in all</b>}
+                </div>
                 <div className="requeue-l">
-                  {missed.map((m, i) => <span key={i}>{m.label}</span>)}
+                  {missedShown.map((m, i) => <span key={i}>{m.label}</span>)}
+                  {missedRest > 0 && <span className="more">+{missedRest} more</span>}
                 </div>
               </div>
             )}
           </div>
-        </Scroll>
       </div>
 
       <footer className="mission-foot">
