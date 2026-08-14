@@ -75,7 +75,7 @@ const UNLOCKED = JSON.stringify({
       ["rules", "suffix", "sound", "verbs", "past", "periphrasis", "subjunctive", "gender", "mexicanismos", "connectors", "arena"]
         .map((id) => [id, cleared(id === "gender" ? 3 : 2)]),
     ),
-    badges: [], settings: { motion: "full", sound: false, haptics: false },
+    badges: [], intro: false, settings: { motion: "full", sound: false, haptics: false },
   },
 });
 
@@ -133,7 +133,18 @@ async function assertNoScroll(page, where) {
   });
 
   await page.goto(base + "/index.html", { waitUntil: "load" });
-  await page.waitForSelector(".map-screen .node", { timeout: 15000 });
+
+  /* A first run explains itself before it shows anything else. The map is a
+     grid of glyphs, so without this the app opens saying nothing at all. */
+  await page.waitForSelector(".intro-screen", { timeout: 15000 });
+  {
+    const pitch = await page.$eval(".intro", (e) => e.textContent).catch(() => "");
+    if (!/palabras/.test(pitch)) fail("the first run does not say what the app is");
+    else pass("a first run explains itself");
+    await assertNoScroll(page, "the intro");
+    await page.click('.intro-foot button:has-text("Look around")');
+    await page.waitForSelector(".map-screen .node", { timeout: 5000 });
+  }
 
   /* the decks the app actually loaded */
   const deckCount = await page.evaluate(() => Object.keys(window.MX || {}).length);
@@ -256,6 +267,15 @@ async function assertNoScroll(page, where) {
   else pass("progress persisted to localStorage");
   if (!stored.game) fail("the saved progress carries no game state");
   else pass("the game state saved alongside the review history");
+
+  /* Dismissing the intro has to stick, or every reload would start with a
+     wall of text somebody has already read. */
+  {
+    await page.reload({ waitUntil: "load" });
+    await page.waitForSelector(".map-screen, .intro-screen", { timeout: 15000 });
+    if (await page.$(".intro-screen")) fail("the intro came back after being dismissed");
+    else pass("the intro does not come back");
+  }
 
   /* ---------- the option buttons, on a save with everything open ---------- */
 

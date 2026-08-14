@@ -14,6 +14,7 @@ import { Hud } from "./components/Hud.jsx";
 import { Dock } from "./components/Dock.jsx";
 import { Mission } from "./components/Mission.jsx";
 import { GlossaryProvider } from "./components/Glossary.jsx";
+import { IntroScreen } from "./screens/Intro.jsx";
 import { MapScreen } from "./screens/Map.jsx";
 import { RegionScreen } from "./screens/Region.jsx";
 import { CodexScreen } from "./screens/Codex.jsx";
@@ -99,6 +100,11 @@ export function App() {
     }
   };
 
+  /* Shown once, then never again unless progress is reset. */
+  const dismissIntro = useCallback(() => {
+    setProgress((prev) => ({ ...prev, game: { ...prev.game, intro: false } }));
+  }, []);
+
   const setSettings = useCallback((patch) => {
     setProgress((prev) => ({
       ...prev,
@@ -176,6 +182,23 @@ export function App() {
 
   if (!loaded || !game) {
     return <div className="app" data-theme={theme} data-motion="reduced" />;
+  }
+
+  /* The intro stands in for the map until it has been dismissed. It is not a
+     screen you can navigate to, so it cannot get in the way later. */
+  if (game.intro) {
+    return (
+      <div className="app" data-theme={theme} data-motion={motion}>
+        <GlossaryProvider>
+          <main className="stage">
+            <IntroScreen
+              onStart={() => { dismissIntro(); setView({ at: "region", region: REGIONS[0].id }); }}
+              onLook={dismissIntro}
+            />
+          </main>
+        </GlossaryProvider>
+      </div>
+    );
   }
 
   const region = view.region ? regionById(view.region) : null;
