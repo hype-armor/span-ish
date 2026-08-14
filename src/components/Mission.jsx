@@ -365,7 +365,7 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
       </header>
 
       <div className="mission-body" key={index} ref={bodyRef} tabIndex={-1}>
-        <Pages label="this card" className="fill" grow>
+        <Pages label="this card" className="fill">
           <div className="qwrap">
             <div className="tags">{statusPill(card, history)}</div>
 

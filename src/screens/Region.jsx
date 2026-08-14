@@ -32,7 +32,7 @@ export function RegionScreen({ region, game, progress, onStage, onCodex, onBack 
       </header>
 
       <div className="screen-body">
-        <Pages label="this region" grow>
+        <Pages label="this region">
           <p className="region-blurb" data-break="">{region.blurb}</p>
 
           <div className="region-meter" data-break="">

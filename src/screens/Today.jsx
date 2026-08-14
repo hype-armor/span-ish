@@ -37,7 +37,7 @@ export function TodayScreen({ game, progress, summary, onRegion }) {
       </header>
 
       <div className="screen-body">
-        <Pages label="today" grow>
+        <Pages label="today">
           <div className="tile-row" data-break="">
             <div className="tile">
               <div className="tile-n">{level.level}</div>

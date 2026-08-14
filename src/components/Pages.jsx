@@ -17,7 +17,7 @@ import React, { useState, useRef, useEffect, useCallback } from "../react.js";
  * allowed to end, so a row is never cut in half across the fold. With nothing
  * marked, it falls back to stepping by the window height.
  */
-export function Pages({ children, className = "", label = "content", grow = false }) {
+export function Pages({ children, className = "", label = "content" }) {
   const frame = useRef(null);
   const inner = useRef(null);
   const [page, setPage] = useState(0);
@@ -124,8 +124,7 @@ export function Pages({ children, className = "", label = "content", grow = fals
 
   return (
     <div
-      className={"pages" + (grow ? " pages-grow" : "") + (className ? " " + className : "")}
-      data-fits={count === 1}
+      className={"pages" + (className ? " " + className : "")}
       data-more={paged && page < count - 1}
     >
       <div

@@ -13,7 +13,7 @@ export function IntroScreen({ onStart, onLook }) {
   return (
     <div className="screen intro-screen">
       <div className="screen-body">
-        <Pages label="what this is" className="fill" grow>
+        <Pages label="what this is" className="fill">
           <div className="intro">
             <p className="eyebrow" data-break="">Español mexicano</p>
             <h1 data-break="">You already know a few thousand <span>palabras</span></h1>
