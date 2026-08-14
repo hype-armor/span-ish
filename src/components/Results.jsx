@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "../react.js";
 import { MODES } from "../lib/game.js";
 import { burst, sfx } from "../lib/juice.js";
-import { Pages } from "./Pages.jsx";
+import { Scroll } from "./Scroll.jsx";
 
 const RADIUS = 46;
 
@@ -72,8 +72,8 @@ export function MissionResult({ region, stage, outcome, onRestart, onExit, motio
         </div>
       </header>
 
-      <div className="mission-body">
-        <Pages label="these results" className="fill">
+      <div className="mission-body report">
+        <Scroll label="these results" fill>
           <div className="result">
             <div className="ring">
               <svg width="108" height="108" viewBox="0 0 108 108">
@@ -153,7 +153,7 @@ export function MissionResult({ region, stage, outcome, onRestart, onExit, motio
               </div>
             )}
           </div>
-        </Pages>
+        </Scroll>
       </div>
 
       <footer className="mission-foot">

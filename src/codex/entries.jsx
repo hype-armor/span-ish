@@ -13,9 +13,9 @@ import {
 
 /* The codex: everything the old tabs explained, with nothing dropped.
  *
- * Each region's reference material is broken into entries, and each entry is
- * one screen. Where an entry is taller than the screen it is paged rather than
- * scrolled — see components/Pages.jsx.
+ * Each region's reference material is broken into entries, and an entry taller
+ * than the screen scrolls. This is the half of the app that is read rather
+ * than answered, and reading is what scrolling is for.
  *
  * These exist to be read once. Nothing here is a retrieval attempt and nothing
  * here is scheduled; the missions are where the learning happens. Keeping the
@@ -38,7 +38,7 @@ function Converter() {
   const result = useMemo(() => convert(word), [word]);
 
   return (
-    <div className="machine" data-break="">
+    <div className="machine">
       <p className="machine-label">Live conversion</p>
       <input
         value={word}
@@ -92,7 +92,7 @@ function Triggers() {
 
   return (
     <>
-      <div className="chips" data-break="" style={{ marginBottom: 14 }}>
+      <div className="chips" style={{ marginBottom: 14 }}>
         {FILTERS.map(([id, label]) => (
           <button key={id} className={"chip" + (filter === id ? " on" : "")} onClick={() => setFilter(id)}>
             {label}

@@ -3,12 +3,18 @@
  *
  * The content linter checks the decks and test-lib checks the pure logic; this
  * checks that the app still starts, that the map and every screen render, that
- * a mission can be played to the end — and that nothing, anywhere, scrolls.
+ * a mission can be played to the end — and that each kind of screen behaves
+ * the way its kind is supposed to.
  *
- * That last one is the load-bearing check. "No scrolling" is a design rule the
- * whole layout is built on, and it is the kind of rule a single overlong
- * explanation or a slightly taller phone quietly breaks. Nothing else in the
- * repo would notice.
+ * That last one is the load-bearing check, and it is two rules rather than
+ * one. The page itself never scrolls, anywhere: the strip and the dock cannot
+ * be scrolled away from. A card being answered *fits* — no scrollbar and
+ * nothing hidden, because hunting for the rest of a question is not a thing to
+ * ask of somebody mid-retrieval. A reference screen scrolls, like the document
+ * it is.
+ *
+ * The fit rule is the fragile one: a single overlong explanation or a slightly
+ * shorter phone breaks it, and nothing else in the repo would notice.
  *
  * It serves the repo itself, so it exercises exactly what gets deployed.
  *
@@ -79,33 +85,56 @@ const UNLOCKED = JSON.stringify({
   },
 });
 
-/* The rule the whole layout rests on. Checked on the document and on every
-   element: a stray `overflow: auto` inside a screen would be just as wrong as
-   a scrollbar on the page. `.tablewrap` is the one deliberate exception — a
-   very wide table scrolls sideways rather than shrinking its columns to
-   nothing — so horizontal overflow inside one is not a failure. */
-async function assertNoScroll(page, where) {
+/* Rule one, everywhere: the frame does not move. The strip and the dock are
+   fixed furniture, and a page that scrolls would carry them off. */
+async function assertPageFixed(page, where) {
   const bad = await page.evaluate(() => {
     const out = [];
     const doc = document.documentElement;
     if (doc.scrollHeight > doc.clientHeight + 1) out.push(`the page is ${doc.scrollHeight - doc.clientHeight}px taller than the window`);
     if (doc.scrollWidth > doc.clientWidth + 1) out.push(`the page is ${doc.scrollWidth - doc.clientWidth}px wider than the window`);
     if (document.body.scrollHeight > document.body.clientHeight + 1) out.push("the body overflows");
-
-    for (const el of document.querySelectorAll(".app *")) {
-      if (el.closest(".tablewrap")) continue;
-      const over = el.scrollHeight - el.clientHeight;
-      if (over > 1 && el.clientHeight > 0) {
-        const style = getComputedStyle(el);
-        if (style.overflowY === "auto" || style.overflowY === "scroll") {
-          out.push(`${el.className || el.tagName} scrolls vertically (${over}px hidden)`);
-        }
-      }
-    }
     return out;
   });
   for (const problem of bad) fail(`${where}: ${problem}`);
   return bad.length === 0;
+}
+
+/* Rule two, on a card: everything the question needs is on screen at once.
+   Checked as "nothing inside the card is taller than the room it has", which
+   catches both a scrollbar and the quieter failure — content clipped by
+   `overflow: hidden` with no way to reach it. */
+async function assertCardFits(page, where) {
+  const bad = await page.evaluate(() => {
+    const out = [];
+    const card = document.querySelector(".mission");
+    if (!card) return ["no card on screen"];
+    for (const el of card.querySelectorAll("*")) {
+      if (el.closest(".tablewrap")) continue; // a wide table scrolls sideways on purpose
+      const over = el.scrollHeight - el.clientHeight;
+      if (over > 1 && el.clientHeight > 0) {
+        out.push(`${el.className || el.tagName} hides ${over}px of its content`);
+      }
+    }
+    return out.slice(0, 3);
+  });
+  for (const problem of bad) fail(`${where}: ${problem}`);
+  return bad.length === 0;
+}
+
+/* Rule three, on a reference screen: content longer than the screen is
+   reachable by scrolling, and reaching the bottom actually gets there. */
+async function assertScrolls(page, where) {
+  const box = await page.$(".scroll-box");
+  if (!box) { fail(`${where}: no scroller`); return false; }
+  const room = await box.evaluate((e) => e.scrollHeight - e.clientHeight);
+  if (room <= 2) return true; // it all fits, which is fine
+  await box.evaluate((e) => { e.scrollTop = e.scrollHeight; });
+  await page.waitForTimeout(180);
+  const reached = await box.evaluate((e) => e.scrollHeight - e.clientHeight - e.scrollTop < 2);
+  if (!reached) { fail(`${where}: could not scroll to the bottom of ${room}px of content`); return false; }
+  await box.evaluate((e) => { e.scrollTop = 0; });
+  return true;
 }
 
 (async () => {
@@ -141,7 +170,7 @@ async function assertNoScroll(page, where) {
     const pitch = await page.$eval(".intro", (e) => e.textContent).catch(() => "");
     if (!/palabras/.test(pitch)) fail("the first run does not say what the app is");
     else pass("a first run explains itself");
-    await assertNoScroll(page, "the intro");
+    await assertPageFixed(page, "the intro");
     await page.click('.intro-foot button:has-text("Look around")');
     await page.waitForSelector(".map-screen .node", { timeout: 5000 });
   }
@@ -167,15 +196,15 @@ async function assertNoScroll(page, where) {
   for (const size of SIZES) {
     await page.setViewportSize({ width: size.width, height: size.height });
     await page.waitForTimeout(220);
-    let clean = await assertNoScroll(page, `map at ${size.name}`);
+    let clean = await assertPageFixed(page, `map at ${size.name}`);
     for (const where of ["today", "lab"]) {
       await page.click(`.dock-btn[aria-label^="${where === "today" ? "Hoy" : "Lab"}"]`);
       await page.waitForTimeout(260);
-      clean = (await assertNoScroll(page, `${where} at ${size.name}`)) && clean;
+      clean = (await assertPageFixed(page, `${where} at ${size.name}`)) && clean;
     }
     await page.click('.dock-btn[aria-label^="Ruta"]');
     await page.waitForTimeout(200);
-    if (clean) pass(`nothing scrolls at ${size.name} (${size.width}×${size.height})`);
+    if (clean) pass(`the frame stays put at ${size.name} (${size.width}×${size.height})`);
   }
   await page.setViewportSize({ width: 1000, height: 1200 });
   await page.waitForTimeout(200);
@@ -196,24 +225,22 @@ async function assertNoScroll(page, where) {
   const entryCount = await page.$$eval(".rail-dot", (els) => els.length);
   if (entryCount < 2) fail(`the first region's codex has ${entryCount} entries`);
   else pass(`the codex opens with ${entryCount} entries`);
-  await assertNoScroll(page, "codex");
+  await assertPageFixed(page, "the codex");
 
-  /* A table longer than the screen has to stay reachable by paging. Asked on
-     a small phone, because that is where content stops fitting — on a desktop
-     window the first entry fits and the check would prove nothing. */
+  /* A table longer than the screen has to stay reachable — by scrolling, which
+     is what a table wants. Asked on a small phone, because that is where the
+     content stops fitting; on a desktop window the first entry fits and the
+     check would prove nothing. */
   await page.setViewportSize({ width: 360, height: 640 });
   await page.waitForTimeout(320);
-  const pagedThrough = await page.$$eval(".pages-dot", (els) => els.length);
-  if (pagedThrough > 1) pass(`long content pages instead of scrolling (${pagedThrough} pages)`);
-  else fail("the codex fits on one page even on a small phone, so paging was never exercised");
-  await page.click('.pages-arrow[aria-label^="Next"]');
-  await page.waitForTimeout(340);
-  await assertNoScroll(page, "codex, page two");
-  const moved = await page.$eval(".pages-inner", (e) => e.style.transform);
-  if (!/translateY\(-[1-9]/.test(moved)) fail(`paging forward did not move the content (transform: ${moved || "none"})`);
-  else pass("paging forward moves the content without a scrollbar");
+  const room = await page.$eval(".scroll-box", (e) => e.scrollHeight - e.clientHeight);
+  if (room <= 2) fail("the codex fits on one screen even on a small phone, so scrolling was never exercised");
+  else pass(`long reference content scrolls (${room}px below the fold)`);
+  if (await assertScrolls(page, "the codex on a small phone")) pass("  and the bottom of it can be reached");
+  await assertPageFixed(page, "the codex, scrolled");
   await page.setViewportSize({ width: 1000, height: 1200 });
   await page.waitForTimeout(260);
+
   await page.click('.icon-btn[aria-label="Back to the region"]');
   await page.waitForSelector(".region-screen", { timeout: 5000 });
 
@@ -257,7 +284,15 @@ async function assertNoScroll(page, where) {
       fail(`a first mission reported no badge (${won.join(", ") || "nothing"})`);
     } else pass("and it reports what the run won");
   }
-  await assertNoScroll(page, "results");
+  /* The results screen is a report, not a question: it scrolls, and the only
+     rule it owes is that the footer does not go with it. */
+  await assertPageFixed(page, "the results screen");
+  await assertScrolls(page, "the results screen");
+  {
+    const footer = await page.$eval(".mission-foot", (e) => e.getBoundingClientRect().bottom <= window.innerHeight + 1);
+    if (!footer) fail("the results footer is off the bottom of the window");
+    else pass("the results screen keeps its footer while the report scrolls");
+  }
 
   /* clearing a mission has to open the next one */
   await page.click('.mission-foot button:has-text("Back to")');
@@ -393,6 +428,63 @@ async function assertNoScroll(page, where) {
   }
   pass("every region's signature mission builds a full round it is possible to answer");
 
+  /* The fit rule, asked properly. One card fitting proves very little: the
+     shapes differ enormously — a bare verb, a sentence with a blank in it, a
+     dictation card with no prompt at all — and the explanation underneath can
+     be three lines or eight. So walk real cards, in the regions with the
+     longest ones, at the smallest screen the app claims to support, and check
+     both states: the question, and the question plus its answer and reason.
+
+     This is the check most likely to fail on a content change, which is the
+     point of it. */
+  {
+    const SMALL = { width: 360, height: 640 };
+    await open.setViewportSize(SMALL);
+    let checked = 0;
+    let clean = true;
+
+    for (const region of ["El Pasado", "El Oído", "El Subjuntivo", "La Fragua", "Los Cimientos"]) {
+      await open.click('.dock-btn[aria-label^="Ruta"]');
+      await open.waitForTimeout(120);
+      await open.click(`.map-cell:has(.node-label:text-is("${region}")) .node`);
+      await open.waitForSelector(".region-screen", { timeout: 5000 });
+      await open.click(".stage-btn:not([disabled])"); // Recon: every card shape, no clock
+      await open.waitForSelector(".mission", { timeout: 5000 });
+
+      for (let i = 0; i < 5; i++) {
+        await open.waitForTimeout(160);
+        clean = (await assertCardFits(open, `${region}, card ${i + 1} unanswered`)) && clean;
+
+        const opts = await open.$$(".opt:not([disabled]), .ambush-opt:not([disabled])");
+        const input = await open.$("input.answer-input:not([disabled])");
+        if (opts.length) await opts[0].click();
+        else if (input) await open.click(`.mission-foot button:has-text("I don't know")`);
+        else break;
+
+        await open.waitForTimeout(220);
+        /* Answered is the harder case: the options are still there, and the
+           verdict, the explanation and the scheduling line are now under them. */
+        clean = (await assertCardFits(open, `${region}, card ${i + 1} answered`)) && clean;
+        checked++;
+
+        const next = await open.$(".mission-foot button");
+        if (!next) break;
+        await next.click();
+        await open.waitForTimeout(200);
+        if (await open.$(".result")) break;
+      }
+
+      const leave = await open.$('.mission-foot button:has-text("Back to")');
+      if (leave) await leave.click();
+      else await open.click('.icon-btn[aria-label="Leave this mission"]');
+      await open.waitForSelector(".region-screen", { timeout: 5000 });
+    }
+
+    if (clean) pass(`${checked} cards fit ${SMALL.width}×${SMALL.height} answered and unanswered`);
+    await open.setViewportSize({ width: 1000, height: 1200 });
+    await open.waitForTimeout(220);
+  }
+
   /* The glossary. A drill that offers "Subjunctive" as an answer and never
      says what one is explains nothing, so the terms in a card's instruction
      and in its explanation are clickable — and the definition has to open in
@@ -415,7 +507,7 @@ async function assertNoScroll(page, where) {
       const definition = await open.$eval(".gloss-what", (e) => e.textContent.trim()).catch(() => "");
       if (definition.length < 15) fail(`"${word}" opened a definition of ${definition.length} characters`);
       else pass(`a grammar term opens its definition in place ("${word}")`);
-      await assertNoScroll(open, "a definition over the codex");
+      await assertPageFixed(open, "a definition over the codex");
 
       await open.keyboard.press("Escape");
       await open.waitForTimeout(220);
@@ -703,7 +795,7 @@ async function assertNoScroll(page, where) {
     const coarse = await tab.evaluate(() => matchMedia("(hover: none) and (pointer: coarse)").matches);
     if (!coarse) fail("the emulated phone does not report a coarse pointer, so this check proves nothing");
 
-    await assertNoScroll(tab, "a mission on a phone");
+    await assertCardFits(tab, "a card on a phone");
 
     const styleOfFirstOption = async () => {
       await tab.waitForTimeout(300); // the .16s transition has to finish, or this reads mid-fade

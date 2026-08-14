@@ -1,5 +1,5 @@
 import React from "../react.js";
-import { Pages } from "../components/Pages.jsx";
+import { Scroll } from "../components/Scroll.jsx";
 import { Diagnostics } from "../components/Diagnostics.jsx";
 import { ProgressPanel } from "../components/ProgressPanel.jsx";
 
@@ -22,10 +22,10 @@ export function LabScreen({ progress, persist, theme, onTheme, settings, onSetti
       </header>
 
       <div className="screen-body">
-        <Pages label="the lab">
+        <Scroll label="the lab">
           <Diagnostics progress={progress} />
 
-          <div className="panel" data-break="">
+          <div className="panel">
             <div className="card-k">How it feels</div>
             <div className="card-v">
               Motion, sound and haptics are the parts that are decoration. None of them changes what
@@ -51,12 +51,12 @@ export function LabScreen({ progress, persist, theme, onTheme, settings, onSetti
 
           <ProgressPanel progress={progress} persist={persist} />
 
-          <p className="foot" data-break="">
+          <p className="foot">
             Progress is stored in this browser on this device — export it before you switch devices.
             Typed answers forgive accents (nacion counts for nación), but dictation requires the ñ,
             since spelling is the whole point there. Audio asks your browser for a Mexican voice first.
           </p>
-        </Pages>
+        </Scroll>
       </div>
     </div>
   );

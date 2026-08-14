@@ -1,5 +1,5 @@
 import React, { useState } from "../react.js";
-import { Pages } from "../components/Pages.jsx";
+import { Scroll } from "../components/Scroll.jsx";
 import { entriesFor } from "../codex/entries.jsx";
 
 /* The reference material for one region, one entry at a time.
@@ -30,11 +30,11 @@ export function CodexScreen({ region, speak, onExit }) {
       </header>
 
       <div className="screen-body">
-        <Pages label={entry.title} key={entry.id}>
+        <Scroll label={entry.title} key={entry.id}>
           <div className="codex-body">
             <Body speak={speak} />
           </div>
-        </Pages>
+        </Scroll>
       </div>
 
       {entries.length > 1 && (

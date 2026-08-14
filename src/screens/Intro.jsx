@@ -1,5 +1,5 @@
 import React from "../react.js";
-import { Pages } from "../components/Pages.jsx";
+import { Scroll } from "../components/Scroll.jsx";
 import { Lede } from "../components/bits.jsx";
 import { DAILY_GOAL } from "../lib/game.js";
 
@@ -13,10 +13,10 @@ export function IntroScreen({ onStart, onLook }) {
   return (
     <div className="screen intro-screen">
       <div className="screen-body">
-        <Pages label="what this is" className="fill">
+        <Scroll label="what this is" fill>
           <div className="intro">
-            <p className="eyebrow" data-break="">Español mexicano</p>
-            <h1 data-break="">You already know a few thousand <span>palabras</span></h1>
+            <p className="eyebrow">Español mexicano</p>
+            <h1>You already know a few thousand <span>palabras</span></h1>
 
             <Lede>
               Mexican Spanish is regular enough to learn as a set of rules rather than a pile of
@@ -25,21 +25,22 @@ export function IntroScreen({ onStart, onLook }) {
             </Lede>
 
             <div className="intro-points">
-              <div className="intro-point" data-break="">
+              <div className="intro-point">
                 <b>Eleven regions, one road.</b>
                 <span>
                   Each is a topic with its own codex to read and four missions to play. The next one
                   opens once you have cleared two missions in the one before it.
                 </span>
               </div>
-              <div className="intro-point" data-break="">
-                <b>Nothing scrolls.</b>
+              <div className="intro-point">
+                <b>A card always fits.</b>
                 <span>
-                  Every screen is a finite thing you can finish. Anything longer than the screen is
-                  paged — swipe, or use the arrows.
+                  Everything a question needs is on screen at once — nothing to scroll for
+                  mid-answer. The reference pages behind them are long, and those scroll like the
+                  documents they are.
                 </span>
               </div>
-              <div className="intro-point" data-break="">
+              <div className="intro-point">
                 <b>The score is your memory, not your attendance.</b>
                 <span>
                   XP is paid for items the schedule actually asked for, and the streak counts days
@@ -49,7 +50,7 @@ export function IntroScreen({ onStart, onLook }) {
               </div>
             </div>
           </div>
-        </Pages>
+        </Scroll>
       </div>
 
       <footer className="screen-foot intro-foot">
