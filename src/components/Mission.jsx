@@ -5,7 +5,6 @@ import { matches } from "../lib/text.js";
 import { buildRound, bossRound, previewInterval, isDue } from "../lib/srs.js";
 import { MODES, TIMED_MODES, comboMultiplier } from "../lib/game.js";
 import { sfx } from "../lib/juice.js";
-import { Pages } from "./Pages.jsx";
 import { MissionResult } from "./Results.jsx";
 import { Glossed, useGlossary } from "./Glossary.jsx";
 
@@ -36,13 +35,10 @@ function forgeParts(card) {
   const result = convert(english);
   if (!result || !result.ok) return null;
 
-  /* A rule can cover two endings ("-able / -ible"), and each half carries its
-     own hyphen — stripping only the first one leaves "-ible" unmatchable. */
-  const enTail = result.rule.en
-    .split(" / ")
-    .map((t) => t.replace(/^-/, ""))
-    .find((t) => english.toLowerCase().endsWith(t));
-  if (!enTail) return null;
+  /* The ending the rule's own regex matched, not the one its name advertises:
+     the -ize rule also covers analy|ze, and a rule covering two endings
+     ("-able / -ible") only ever matched one of them here. */
+  const enTail = result.matched;
 
   const answer = card.canon || (Array.isArray(card.a) ? card.a[0] : card.a);
   const esTail = String(answer).slice(-result.tail.length);
@@ -370,7 +366,6 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
       </header>
 
       <div className="mission-body" key={index} ref={bodyRef} tabIndex={-1}>
-        <Pages label="this card" className="fill">
           <div className="qwrap">
             <div className="tags">{statusPill(card, history)}</div>
 
@@ -505,7 +500,6 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
               </div>
             )}
           </div>
-        </Pages>
       </div>
 
       <footer className="mission-foot">

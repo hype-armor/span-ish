@@ -26,10 +26,14 @@ const EMPTY = { scores: {}, items: {}, reviews: {}, game: null };
 
 /* The shell.
  *
- * One fixed-height frame that never scrolls: a heads-up strip, a stage that
- * takes whatever is left, and a dock. Every screen is sized to the stage and
- * pages its own content if it does not fit (components/Pages.jsx). Nothing in
- * the app has a scrollbar, on any screen, at any size. */
+ * One fixed-height frame: a heads-up strip, a stage that takes whatever is
+ * left, and a dock. The frame itself never scrolls and never moves — the page
+ * has no scrollbar at any size.
+ *
+ * Inside it, two kinds of screen. A card you are answering fits, always: no
+ * scrolling and no paging, because hunting for the rest of a question is not
+ * something to ask of someone mid-retrieval. A reference screen scrolls, like
+ * the document it is. components/Scroll.jsx is the second kind. */
 export function App() {
   const [progress, setProgress] = useState(EMPTY);
   const [theme, setTheme] = useState("light");

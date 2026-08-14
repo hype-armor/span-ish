@@ -1,5 +1,5 @@
 import React from "../react.js";
-import { Pages } from "../components/Pages.jsx";
+import { Scroll } from "../components/Scroll.jsx";
 import { stagesFor, stageOpen, regionMastery, MODES } from "../lib/game.js";
 import { idsForMod } from "../lib/decks.js";
 import { dueCount } from "../lib/srs.js";
@@ -32,10 +32,10 @@ export function RegionScreen({ region, game, progress, onStage, onCodex, onBack 
       </header>
 
       <div className="screen-body">
-        <Pages label="this region">
-          <p className="region-blurb" data-break="">{region.blurb}</p>
+        <Scroll label="this region">
+          <p className="region-blurb">{region.blurb}</p>
 
-          <div className="region-meter" data-break="">
+          <div className="region-meter">
             <div className="meter">
               <i className="meter-held" style={{ width: mastery.fraction * 100 + "%" }} />
               <i
@@ -51,7 +51,7 @@ export function RegionScreen({ region, game, progress, onStage, onCodex, onBack 
             </div>
           </div>
 
-          <button className="codex-link" onClick={onCodex} data-break="">
+          <button className="codex-link" onClick={onCodex}>
             <span className="codex-icon" aria-hidden="true">☰</span>
             <span>
               <b>Open the codex</b>
@@ -69,7 +69,7 @@ export function RegionScreen({ region, game, progress, onStage, onCodex, onBack 
                 <button
                   key={stage.id}
                   className="stage-btn"
-                  data-break=""
+                 
                   data-mode={stage.mode}
                   data-done={done}
                   disabled={!open}
@@ -92,7 +92,7 @@ export function RegionScreen({ region, game, progress, onStage, onCodex, onBack 
               );
             })}
           </div>
-        </Pages>
+        </Scroll>
       </div>
     </div>
   );

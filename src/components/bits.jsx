@@ -8,11 +8,8 @@ export function Speak({ text, speak, label }) {
   );
 }
 
-/* Every reference table in the app.
- *
- * Rows are marked as break points so that a table longer than the screen is
- * paged between rows rather than cut through the middle of one — see
- * Pages.jsx, which does the paging. Nothing here scrolls. */
+/* Every reference table in the app. A table longer than the screen scrolls
+   inside the screen's body — see Scroll.jsx. */
 export function Table({ head, children }) {
   return (
     <div className="tablewrap">
@@ -20,11 +17,7 @@ export function Table({ head, children }) {
         <thead>
           <tr>{head.map((h, i) => <th key={i}>{h}</th>)}</tr>
         </thead>
-        <tbody>
-          {React.Children.map(children, (row) =>
-            React.isValidElement(row) ? React.cloneElement(row, { "data-break": "" }) : row,
-          )}
-        </tbody>
+        <tbody>{children}</tbody>
       </table>
     </div>
   );
@@ -35,15 +28,15 @@ export function Table({ head, children }) {
    someone remembered to mark it up. */
 export function Lede({ children, style }) {
   return (
-    <p className="lede" style={style} data-break="">
+    <p className="lede" style={style}>
       <Glossed>{children}</Glossed>
     </p>
   );
 }
 
-/* A heading inside a codex entry. Also a legal place for a page to end. */
+/* A heading inside a codex entry. */
 export function Head({ children }) {
-  return <h3 data-break="">{children}</h3>;
+  return <h3>{children}</h3>;
 }
 
 /* The small stat/reference cards, in a grid that reflows down to one column. */
@@ -53,7 +46,7 @@ export function Cards({ cols = 3, children }) {
 
 export function Card({ children, className = "", style }) {
   return (
-    <div className={"card " + className} style={style} data-break="">
+    <div className={"card " + className} style={style}>
       {children}
     </div>
   );

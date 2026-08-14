@@ -24,12 +24,12 @@ Inside `src/`:
 | `src/lib/` | The parts with rules in them and no DOM: the scheduler (`srs.js`), the game layer (`game.js`), the decks (`decks.js`), grading (`text.js`), merging two devices (`merge.js`). `tools/test-lib.js` drives these directly. |
 | `src/screens/` | One file per place you can be: the intro, the map, a region, its codex, today, the lab. |
 | `src/components/` | The pieces screens are built from — the mission engine, the pager, the heads-up strip, the dock, the glossary. |
-| `src/codex/` | The reference material, as paged screens. Prose and tables only; it reads the decks and teaches nothing the drills do not. |
+| `src/codex/` | The reference material, one screen per entry. Prose and tables only; it reads the decks and teaches nothing the drills do not. |
 
 ### How it is put together
 
-There are no tabs and there is no scrolling. The app is one fixed frame —
-a heads-up strip, a stage, and a dock — and everything happens inside it:
+There are no tabs. The app is one fixed frame — a heads-up strip, a stage, and
+a dock — and everything happens inside it:
 
 - A **first run** opens on one screen that says what the app is and how it
   works, then never shows it again. The old masthead said that on every screen
@@ -43,11 +43,23 @@ a heads-up strip, a stage, and a dock — and everything happens inside it:
   you know. **El Laboratorio** is the same schedule diagnostics as before, plus
   export and import.
 
-Content that does not fit its screen is *paged*, never scrolled
-(`src/components/Pages.jsx`). `npm run smoke` asserts that nothing scrolls, on
-every screen, at four viewport sizes — it is the check most likely to catch a
-regression, because a long explanation or a small phone breaks the rule
-silently.
+Two rules about size, and they are different rules:
+
+- **The frame never moves.** The page itself has no scrollbar at any size, so
+  the strip and the dock cannot be scrolled away from.
+- **A card being answered fits; a reference screen scrolls.** Everything a
+  question needs is on screen at once, because hunting for the rest of it
+  mid-retrieval is a bad thing to ask. A codex entry is a document and behaves
+  like one (`src/components/Scroll.jsx`).
+
+`npm run smoke` checks all three. The fit rule is the fragile one — a long
+explanation or a shorter phone breaks it silently — so it is asked properly:
+twenty-five real cards, in the regions with the longest ones, at 360×640, both
+before and after answering.
+
+An earlier version of this app paged instead of scrolling, everywhere. Paging
+suits a thing you step through and not a thing you read, and most of the
+reference material is read.
 
 The game layer is documented in [`docs/learning-design.md`](docs/learning-design.md)
 under *The game layer*, including which mechanics were deliberately not built.

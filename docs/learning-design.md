@@ -128,9 +128,15 @@ the rule itself is free.
 ### 8. Reading and answering are different activities, and live apart
 
 The reference material used to sit above each drill, which meant it was always
-in the way and never actually studied. It is now a codex you open on purpose,
-one screen at a time. Nothing was dropped in the move — every table, every
-paragraph — but nothing is passively scrolled past on the way to a card either.
+in the way and never actually studied. It is now a codex you open on purpose.
+Nothing was dropped in the move — every table, every paragraph — but nothing is
+passively scrolled past on the way to a card either.
+
+The two halves are also built differently, and deliberately. A codex entry
+scrolls, because it is a document. A card does not: everything the question
+needs is on screen at once. Asking someone to go looking for the rest of a
+question *during* a retrieval attempt adds load that has nothing to do with the
+material, and the retrieval is the part with the evidence behind it.
 
 ---
 

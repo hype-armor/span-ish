@@ -1,5 +1,5 @@
 import React from "../react.js";
-import { Pages } from "../components/Pages.jsx";
+import { Scroll } from "../components/Scroll.jsx";
 import {
   DAILY_GOAL, questsFor, questProgress, streakStatus, levelProgress,
   titleFor, BADGES, masteryPoints, rankOf, REGIONS, unlockedRegions,
@@ -49,8 +49,8 @@ export function TodayScreen({ game, progress, summary, onRegion }) {
       </header>
 
       <div className="screen-body">
-        <Pages label="today">
-          <div className="tile-row" data-break="">
+        <Scroll label="today">
+          <div className="tile-row">
             <div className="tile">
               <div className="tile-n">{level.level}</div>
               <div className="tile-l">level · {titleFor(level.level)}</div>
@@ -71,7 +71,7 @@ export function TodayScreen({ game, progress, summary, onRegion }) {
             </div>
           </div>
 
-          <div className="goal" data-break="" data-met={day.goalMet}>
+          <div className="goal" data-met={day.goalMet}>
             <div className="goal-head">
               <b>Daily goal</b>
               <span>{Math.min(day.due, DAILY_GOAL)} / {DAILY_GOAL} scheduled items</span>
@@ -86,10 +86,10 @@ export function TodayScreen({ game, progress, summary, onRegion }) {
             </p>
           </div>
 
-          <h3 className="section-h" data-break="">Quests</h3>
+          <h3 className="section-h">Quests</h3>
           <div className="quests">
             {quests.map((q) => (
-              <div className="quest" key={q.id} data-done={q.done} data-break="">
+              <div className="quest" key={q.id} data-done={q.done}>
                 <span className="quest-mark" aria-hidden="true">{q.done ? "✓" : "◦"}</span>
                 <span className="quest-text">
                   <b>{q.text}</b>
@@ -100,8 +100,8 @@ export function TodayScreen({ game, progress, summary, onRegion }) {
             ))}
           </div>
 
-          <h3 className="section-h" data-break="">The shape of what you know</h3>
-          <div className="ranks" data-break="">
+          <h3 className="section-h">The shape of what you know</h3>
+          <div className="ranks">
             {[
               ["burnished", "burnished", "60+ days"],
               ["mature", "mature", "21+ days"],
@@ -121,21 +121,21 @@ export function TodayScreen({ game, progress, summary, onRegion }) {
             ))}
           </div>
 
-          <h3 className="section-h" data-break="">Badges</h3>
+          <h3 className="section-h">Badges</h3>
           <div className="badges">
             {BADGES.map((b) => (
-              <span key={b.id} className="badge" data-on={held.has(b.id)} data-break="">
+              <span key={b.id} className="badge" data-on={held.has(b.id)}>
                 <b aria-hidden="true">{held.has(b.id) ? "🏅" : "◦"}</b> {b.text}
               </span>
             ))}
           </div>
 
           {target && target.due > 0 && (
-            <button className="btn wide spaced" data-break="" onClick={() => onRegion(target.region.id)}>
+            <button className="btn wide spaced" onClick={() => onRegion(target.region.id)}>
               Take {target.due} due item{target.due === 1 ? "" : "s"} into {target.region.name}
             </button>
           )}
-        </Pages>
+        </Scroll>
       </div>
     </div>
   );
