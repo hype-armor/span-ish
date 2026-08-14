@@ -336,12 +336,17 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
         {mode === "boss" ? (
           <div className="bossbar">
             <div className="bosshp"><i style={{ width: (100 * hp) / maxHp + "%" }} /></div>
+            {/* A slot that is always there, so a damage number appearing does
+                not shove the hearts along — and so it cannot land on top of
+                the card counter, which is where it used to go. */}
+            <span className="flash-slot" aria-hidden="true">
+              {flash && <span className={"flash flash-" + flash.kind}>{flash.text}</span>}
+            </span>
             <div className="hearts" aria-label={`${hearts} lives left`}>
               {Array.from({ length: HEARTS.boss }, (_, i) => (
                 <span key={i} className="heart" data-on={i < hearts} aria-hidden="true">♥</span>
               ))}
             </div>
-            {flash && <span className={"flash flash-" + flash.kind}>{flash.text}</span>}
           </div>
         ) : (
           <div className="runbar">
