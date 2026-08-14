@@ -182,26 +182,8 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
     settle(option === card.a, option);
   };
 
-  /* ---------- the clock ---------- */
-
-  const [left, setLeft] = useState(1);
-  useEffect(() => {
-    if (!timed || answered || outcome) { setLeft(1); return; }
-    const limit = LIMIT[mode];
-    const start = Date.now();
-    let warned = false;
-    const id = setInterval(() => {
-      const elapsed = Date.now() - start;
-      const remaining = Math.max(0, 1 - elapsed / limit);
-      setLeft(remaining);
-      if (remaining < 0.28 && !warned) { warned = true; sfx.tick(); }
-      /* Running out is a failed retrieval attempt, which still gets its
-         answer and its reason — it is not skipped past. */
-      if (remaining <= 0) { clearInterval(id); settle(false, null); }
-    }, 90);
-    return () => clearInterval(id);
-  }, [timed, answered, index, mode, outcome, settle]);
-
+  /* The damage number, which is on screen for as long as it takes to read.
+     (The clock is a component of its own — see Clock, below.) */
   useEffect(() => {
     if (!flash) return;
     const t = setTimeout(() => setFlash(null), 700);
@@ -365,7 +347,7 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
           <div className="runbar">
             <div className="bar"><i style={{ width: (100 * index) / round.length + "%" }} /></div>
             {timed && !answered && (
-              <div className="clock" data-low={left < 0.28}><i style={{ width: left * 100 + "%" }} /></div>
+              <Clock key={index} limit={LIMIT[mode]} onExpire={() => settle(false, null)} />
             )}
           </div>
         )}
@@ -383,7 +365,7 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
       </header>
 
       <div className="mission-body" key={index} ref={bodyRef} tabIndex={-1}>
-        <Pages label="this card" className="fill" grow>
+        <Pages label="this card" className="fill">
           <div className="qwrap">
             <div className="tags">{statusPill(card, history)}</div>
 
@@ -543,6 +525,33 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
       </footer>
     </div>
   );
+}
+
+/* The bar that runs out.
+ *
+ * Keyed on the card, so it restarts by being replaced rather than by an effect
+ * noticing something changed. The callback goes through a ref so that a parent
+ * re-render cannot reset the clock mid-card. */
+function Clock({ limit, onExpire }) {
+  const [left, setLeft] = useState(1);
+  const expire = useRef(onExpire);
+  expire.current = onExpire;
+
+  useEffect(() => {
+    const start = Date.now();
+    let warned = false;
+    const id = setInterval(() => {
+      const remaining = Math.max(0, 1 - (Date.now() - start) / limit);
+      setLeft(remaining);
+      if (remaining < 0.28 && !warned) { warned = true; sfx.tick(); }
+      /* Running out is a failed retrieval attempt, which still gets its answer
+         and its reason — it is not skipped past. */
+      if (remaining <= 0) { clearInterval(id); expire.current(); }
+    }, 90);
+    return () => clearInterval(id);
+  }, [limit]);
+
+  return <div className="clock" data-low={left < 0.28}><i style={{ width: left * 100 + "%" }} /></div>;
 }
 
 /* How a card is named on the results screen.

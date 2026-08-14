@@ -17,7 +17,7 @@ import React, { useState, useRef, useEffect, useCallback } from "../react.js";
  * allowed to end, so a row is never cut in half across the fold. With nothing
  * marked, it falls back to stepping by the window height.
  */
-export function Pages({ children, className = "", label = "content", grow = false }) {
+export function Pages({ children, className = "", label = "content" }) {
   const frame = useRef(null);
   const inner = useRef(null);
   const [page, setPage] = useState(0);
@@ -73,8 +73,10 @@ export function Pages({ children, className = "", label = "content", grow = fals
     setPage((p) => Math.min(p, pages.length - 1));
   }, []);
 
+  /* The observer is set up once. Rebuilding it whenever `children` changed
+     identity — which is every render — meant a card with anything animating on
+     it tore down and recreated an observer continuously. */
   useEffect(() => {
-    measure();
     if (typeof ResizeObserver === "undefined") {
       window.addEventListener("resize", measure);
       return () => window.removeEventListener("resize", measure);
@@ -83,7 +85,11 @@ export function Pages({ children, className = "", label = "content", grow = fals
     if (frame.current) observer.observe(frame.current);
     if (inner.current) observer.observe(inner.current);
     return () => observer.disconnect();
-  }, [measure, children]);
+  }, [measure]);
+
+  /* Content can change without changing size — a table row swapped for another
+     of the same height — and the observer would not fire for that. */
+  useEffect(measure, [measure, children]);
 
   const count = offsets.length;
   const go = useCallback(
@@ -118,8 +124,7 @@ export function Pages({ children, className = "", label = "content", grow = fals
 
   return (
     <div
-      className={"pages" + (grow ? " pages-grow" : "") + (className ? " " + className : "")}
-      data-fits={count === 1}
+      className={"pages" + (className ? " " + className : "")}
       data-more={paged && page < count - 1}
     >
       <div

@@ -30,7 +30,7 @@ export function CodexScreen({ region, speak, onExit }) {
       </header>
 
       <div className="screen-body">
-        <Pages label={entry.title} grow key={entry.id}>
+        <Pages label={entry.title} key={entry.id}>
           <div className="codex-body">
             <Body speak={speak} />
           </div>

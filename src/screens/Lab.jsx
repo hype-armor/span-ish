@@ -22,7 +22,7 @@ export function LabScreen({ progress, persist, theme, onTheme, settings, onSetti
       </header>
 
       <div className="screen-body">
-        <Pages label="the lab" grow>
+        <Pages label="the lab">
           <Diagnostics progress={progress} />
 
           <div className="panel" data-break="">

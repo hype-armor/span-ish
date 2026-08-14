@@ -73,7 +73,7 @@ export function MissionResult({ region, stage, outcome, onRestart, onExit, motio
       </header>
 
       <div className="mission-body">
-        <Pages label="these results" className="fill" grow>
+        <Pages label="these results" className="fill">
           <div className="result">
             <div className="ring">
               <svg width="108" height="108" viewBox="0 0 108 108">

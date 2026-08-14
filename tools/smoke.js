@@ -266,6 +266,34 @@ async function assertNoScroll(page, where) {
   if (openNow < 2) fail("clearing the first mission did not open the second");
   else pass("clearing a mission opens the next one");
 
+  /* Today's shortcut has to send you where it says it will. Before the Arena
+     opens it points at an ordinary region, and promising the Arena and
+     delivering somewhere else would be a small lie told daily. */
+  {
+    await page.click('.dock-btn[aria-label^="Hoy"]');
+    await page.waitForSelector(".today-screen", { timeout: 5000 });
+    const shortcut = await page.$(".today-screen .btn.wide");
+    if (shortcut) {
+      const label = (await shortcut.textContent()).trim();
+      await shortcut.click();
+      await page.waitForSelector(".region-screen", { timeout: 5000 });
+      /* The heading carries the region's glyph as well as its name. */
+      const landed = await page.$eval(".region-screen h2", (e) => {
+        const glyph = e.querySelector(".region-glyph");
+        return e.textContent.replace(glyph ? glyph.textContent : "", "").trim();
+      });
+      if (!label.includes(landed)) fail(`"${label}" opened ${landed}`);
+      else pass(`the day's shortcut opens the region it names (${landed})`);
+      await page.click('.icon-btn[aria-label="Back to the map"]');
+      await page.waitForSelector(".map-screen", { timeout: 5000 });
+    } else {
+      /* Only reachable if the mission just played was flawless, which the
+         answers this harness gives makes very unlikely. */
+      fail("nothing is due after a mission with misses in it, so the shortcut never appeared");
+    }
+  }
+
+
   /* the storage shim prefixes every key with mx-pwa:, and the game rides along
      in the same record as the review history */
   const stored = await page.evaluate(() => {
@@ -364,6 +392,63 @@ async function assertNoScroll(page, where) {
     await open.waitForSelector(".region-screen", { timeout: 5000 });
   }
   pass("every region's signature mission builds a full round it is possible to answer");
+
+  /* The glossary. A drill that offers "Subjunctive" as an answer and never
+     says what one is explains nothing, so the terms in a card's instruction
+     and in its explanation are clickable — and the definition has to open in
+     place rather than navigating away, because leaving the drill to look
+     something up is how a session ends. */
+  {
+    await open.click('.dock-btn[aria-label^="Ruta"]');
+    await open.waitForTimeout(120);
+    await open.click('.map-cell:has(.node-label:text-is("El Subjuntivo")) .node');
+    await open.waitForSelector(".region-screen", { timeout: 5000 });
+    await open.click(".codex-link");
+    await open.waitForSelector(".codex", { timeout: 5000 });
+
+    const terms = await open.$$(".term-link");
+    if (!terms.length) fail("no grammar term in the codex is clickable");
+    else {
+      const word = (await terms[0].textContent()).trim();
+      await terms[0].click();
+      await open.waitForSelector(".gloss-card", { timeout: 3000 });
+      const definition = await open.$eval(".gloss-what", (e) => e.textContent.trim()).catch(() => "");
+      if (definition.length < 15) fail(`"${word}" opened a definition of ${definition.length} characters`);
+      else pass(`a grammar term opens its definition in place ("${word}")`);
+      await assertNoScroll(open, "a definition over the codex");
+
+      await open.keyboard.press("Escape");
+      await open.waitForTimeout(220);
+      if (await open.$(".gloss-card")) fail("Escape did not close the definition");
+      else pass("  and Escape closes it");
+    }
+
+    /* And inside a mission, where the explanation is the thing being read. */
+    await open.click('.icon-btn[aria-label="Back to the region"]');
+    await open.waitForSelector(".region-screen", { timeout: 5000 });
+    await open.click(".stage-btn:not([disabled])");
+    await open.waitForSelector(".mission", { timeout: 5000 });
+
+    const inCard = await open.$(".qwrap .term-link");
+    if (!inCard) pass("  (this card's instruction happens to use no glossary term)");
+    else {
+      await inCard.click();
+      await open.waitForSelector(".gloss-card", { timeout: 3000 });
+      /* Space belongs to the definition while it is open — the mission's own
+         handler advances on Space, and both firing would answer a card the
+         learner never saw. */
+      const before = await open.$eval(".mission-count", (e) => e.textContent.trim());
+      await open.keyboard.press(" ");
+      await open.waitForTimeout(250);
+      const after = await open.$eval(".mission-count", (e) => e.textContent.trim());
+      if (before !== after) fail(`Space over an open definition advanced the mission (${before} → ${after})`);
+      else pass("  and a definition open over a card holds on to the keyboard");
+      await open.keyboard.press("Escape");
+      await open.waitForTimeout(200);
+    }
+    await open.click('.icon-btn[aria-label="Leave this mission"]');
+    await open.waitForSelector(".region-screen", { timeout: 5000 });
+  }
 
   /* The clock has to actually run out, and running out has to behave like any
      other failed attempt: the answer and the reason, not a skipped card. */

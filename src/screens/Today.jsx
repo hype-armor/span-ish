@@ -2,9 +2,10 @@ import React from "../react.js";
 import { Pages } from "../components/Pages.jsx";
 import {
   DAILY_GOAL, questsFor, questProgress, streakStatus, levelProgress,
-  titleFor, BADGES, masteryPoints, rankOf,
+  titleFor, BADGES, masteryPoints, rankOf, REGIONS, unlockedRegions,
 } from "../lib/game.js";
-import { ALL_IDS } from "../lib/decks.js";
+import { ALL_IDS, idsForMod } from "../lib/decks.js";
+import { dueCount } from "../lib/srs.js";
 
 /* What today is asking for.
  *
@@ -27,6 +28,17 @@ export function TodayScreen({ game, progress, summary, onRegion }) {
   const ranks = { unseen: 0, shaky: 0, learning: 0, solid: 0, mature: 0, burnished: 0 };
   for (const id of ALL_IDS) ranks[rankOf(progress.items[id])]++;
 
+  /* Where the button at the bottom actually goes. The Arena is the right
+     answer once it is open, since it interleaves; before that, send them to
+     whichever open region owes the most — and name it, rather than promising
+     the Arena and delivering somewhere else. */
+  const open = unlockedRegions(game);
+  const target = open.has("arena")
+    ? { region: REGIONS.find((r) => r.id === "arena"), due: summary.due }
+    : REGIONS.filter((r) => open.has(r.id) && !r.endless)
+        .map((r) => ({ region: r, due: dueCount(progress.items, idsForMod(r.mod), now) }))
+        .sort((a, b) => b.due - a.due)[0];
+
   return (
     <div className="screen today-screen">
       <header className="screen-top">
@@ -37,7 +49,7 @@ export function TodayScreen({ game, progress, summary, onRegion }) {
       </header>
 
       <div className="screen-body">
-        <Pages label="today" grow>
+        <Pages label="today">
           <div className="tile-row" data-break="">
             <div className="tile">
               <div className="tile-n">{level.level}</div>
@@ -118,9 +130,9 @@ export function TodayScreen({ game, progress, summary, onRegion }) {
             ))}
           </div>
 
-          {summary.due > 0 && (
-            <button className="btn wide spaced" data-break="" onClick={() => onRegion("arena")}>
-              Take {summary.due} due item{summary.due === 1 ? "" : "s"} into the Arena
+          {target && target.due > 0 && (
+            <button className="btn wide spaced" data-break="" onClick={() => onRegion(target.region.id)}>
+              Take {target.due} due item{target.due === 1 ? "" : "s"} into {target.region.name}
             </button>
           )}
         </Pages>

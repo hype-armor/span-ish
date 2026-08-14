@@ -17,6 +17,15 @@ An installable, offline-capable build of the Mexican Spanish drill app.
 | `icons/` | 192 / 512 / maskable / Apple touch icons, plus an SVG favicon. |
 | `docs/learning-design.md` | Why the app drills the way it does, and the research behind it. Read before changing drill mechanics. |
 
+Inside `src/`:
+
+| Directory | Purpose |
+| --- | --- |
+| `src/lib/` | The parts with rules in them and no DOM: the scheduler (`srs.js`), the game layer (`game.js`), the decks (`decks.js`), grading (`text.js`), merging two devices (`merge.js`). `tools/test-lib.js` drives these directly. |
+| `src/screens/` | One file per place you can be: the intro, the map, a region, its codex, today, the lab. |
+| `src/components/` | The pieces screens are built from — the mission engine, the pager, the heads-up strip, the dock, the glossary. |
+| `src/codex/` | The reference material, as paged screens. Prose and tables only; it reads the decks and teaches nothing the drills do not. |
+
 ### How it is put together
 
 There are no tabs and there is no scrolling. The app is one fixed frame —
