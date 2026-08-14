@@ -6,7 +6,7 @@ import { normalise } from "./lib/progress.js";
 import { PROGRESS_KEYS, THEME_KEYS, readFirst } from "./lib/storage.js";
 import {
   regionById, stagesFor, recordMission, rollDay, awardBadges, masteryPoints,
-  levelFor, titleFor, streakStatus, unlockedRegions, stagesCleared, REGIONS,
+  levelFor, titleFor, streakStatus, unlockedRegions, REGIONS,
   dayKey, questsFor, questProgress,
 } from "./lib/game.js";
 import { configure as configureJuice } from "./lib/juice.js";
@@ -220,14 +220,11 @@ export function App() {
   const streak = streakStatus(game, Date.now());
   const dockPip = summary.due > 0 && !game.today.goalMet ? summary.due : 0;
 
-  /* The Arena needs a few regions behind it before interleaving means
-     anything, so "take these into the Arena" falls back to wherever is open. */
+  /* Today names the region it is sending you to, so this only has to guard
+     against a region that is not open — which should not happen. */
   const goRegion = (id) => {
     const open = unlockedRegions(game);
-    const target = open.has(id)
-      ? id
-      : (REGIONS.filter((r) => open.has(r.id)).sort((a, b) => stagesCleared(game, b.id) - stagesCleared(game, a.id))[0] || REGIONS[0]).id;
-    setView({ at: "region", region: target });
+    setView({ at: "region", region: open.has(id) ? id : REGIONS[0].id });
   };
 
   return (

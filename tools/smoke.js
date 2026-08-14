@@ -266,6 +266,34 @@ async function assertNoScroll(page, where) {
   if (openNow < 2) fail("clearing the first mission did not open the second");
   else pass("clearing a mission opens the next one");
 
+  /* Today's shortcut has to send you where it says it will. Before the Arena
+     opens it points at an ordinary region, and promising the Arena and
+     delivering somewhere else would be a small lie told daily. */
+  {
+    await page.click('.dock-btn[aria-label^="Hoy"]');
+    await page.waitForSelector(".today-screen", { timeout: 5000 });
+    const shortcut = await page.$(".today-screen .btn.wide");
+    if (shortcut) {
+      const label = (await shortcut.textContent()).trim();
+      await shortcut.click();
+      await page.waitForSelector(".region-screen", { timeout: 5000 });
+      /* The heading carries the region's glyph as well as its name. */
+      const landed = await page.$eval(".region-screen h2", (e) => {
+        const glyph = e.querySelector(".region-glyph");
+        return e.textContent.replace(glyph ? glyph.textContent : "", "").trim();
+      });
+      if (!label.includes(landed)) fail(`"${label}" opened ${landed}`);
+      else pass(`the day's shortcut opens the region it names (${landed})`);
+      await page.click('.icon-btn[aria-label="Back to the map"]');
+      await page.waitForSelector(".map-screen", { timeout: 5000 });
+    } else {
+      /* Only reachable if the mission just played was flawless, which the
+         answers this harness gives makes very unlikely. */
+      fail("nothing is due after a mission with misses in it, so the shortcut never appeared");
+    }
+  }
+
+
   /* the storage shim prefixes every key with mx-pwa:, and the game rides along
      in the same record as the review history */
   const stored = await page.evaluate(() => {
