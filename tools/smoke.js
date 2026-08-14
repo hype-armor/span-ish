@@ -233,9 +233,13 @@ async function assertScrolls(page, where) {
   /* the codex: the reference material the tabs used to hold */
   await page.click(".codex-link");
   await page.waitForSelector(".codex", { timeout: 5000 });
-  const entryCount = await page.$$eval(".rail-dot", (els) => els.length);
-  if (entryCount < 2) fail(`the first region's codex has ${entryCount} entries`);
-  else pass(`the codex opens with ${entryCount} entries`);
+  const chapters = await page.$$eval(".rail-chip", (els) => els.map((e) => e.textContent.trim()));
+  if (chapters.length < 2) fail(`the first region's codex has ${chapters.length} chapters`);
+  else pass(`the codex opens with ${chapters.length} chapters`);
+  /* Named, because the point of the rail is that the structure of a region is
+     legible without pressing Next to find out what is in it. */
+  if (chapters.some((t) => !t)) fail("a chapter in the rail has no name");
+  else if (chapters.length) pass(`  and they are named: ${chapters.slice(0, 3).join(", ")}…`);
   await assertPageFixed(page, "the codex");
 
   /* A table longer than the screen has to stay reachable — by scrolling, which
@@ -244,9 +248,20 @@ async function assertScrolls(page, where) {
      check would prove nothing. */
   await page.setViewportSize({ width: 360, height: 640 });
   await page.waitForTimeout(320);
-  const room = await page.$eval(".scroll-box", (e) => e.scrollHeight - e.clientHeight);
-  if (room <= 2) fail("the codex fits on one screen even on a small phone, so scrolling was never exercised");
-  else pass(`long reference content scrolls (${room}px below the fold)`);
+
+  /* Not every chapter is long — a chapter that is one paragraph is a chapter
+     that broke where the argument broke, which is the point. Find one with a
+     table in it and scroll that. */
+  let room = 0;
+  let longest = "";
+  for (let i = 0; i < chapters.length; i++) {
+    await page.click(`.rail-chip >> nth=${i}`);
+    await page.waitForTimeout(280);
+    const here = await page.$eval(".scroll-box", (e) => e.scrollHeight - e.clientHeight);
+    if (here > room) { room = here; longest = chapters[i]; }
+  }
+  if (room <= 2) fail("no chapter in the first region overflows a small phone, so scrolling was never exercised");
+  else pass(`long reference content scrolls ("${longest}", ${room}px below the fold)`);
   if (await assertScrolls(page, "the codex on a small phone")) pass("  and the bottom of it can be reached");
   await assertPageFixed(page, "the codex, scrolled");
   await page.setViewportSize({ width: 1000, height: 1200 });

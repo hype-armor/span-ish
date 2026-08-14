@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "../react.js";
-import { Table, Speak, Lede, Head, Cards, Card } from "../components/bits.jsx";
+import { Table, Speak, Lede, Cards, Card } from "../components/bits.jsx";
 import { convert } from "../lib/suffix.js";
 import {
   suffixes, converterExamples, genderEndings, genderExceptionTable,
@@ -122,16 +122,29 @@ export const CODEX = {
   rules: [
     {
       id: "why",
-      title: "Why rules first",
+      short: "Why rules first",
+      title: "Why the rules come first",
+      Body: () => (
+        <Lede>
+          Every other region asks you to produce Spanish, which means recalling a rule and applying
+          it in the same breath. This one drills the rules by themselves — the ending maps, the
+          gender table, the verb paradigms, the subjunctive recipe — so that by the time you are
+          filling in a sentence, the rule is already free and your attention can go to the sentence.
+          The four chapters after this one are those tables. Read them once; the missions are where
+          they get learned.
+        </Lede>
+      ),
+    },
+    {
+      id: "suffixes",
+      short: "Suffix map",
+      title: "The suffix map, ending to ending",
       Body: () => (
         <>
           <Lede>
-            Every other region asks you to produce Spanish, which means recalling a rule and applying
-            it in the same breath. This one drills the rules by themselves — the ending maps, the
-            gender table, the verb paradigms, the subjunctive recipe — so that by the time you are
-            filling in a sentence, the rule is already free and your attention can go to the sentence.
+            Fifteen endings, each one a fixed swap. La Fragua is where they get applied to real
+            words; this is the map itself.
           </Lede>
-          <Head>The suffix map, ending to ending</Head>
           <Table head={["English", "Spanish", "Example"]}>
             {suffixes.map((r) => (
               <tr key={r.en}>
@@ -146,35 +159,50 @@ export const CODEX = {
     },
     {
       id: "gender",
-      title: "Gender by ending",
+      short: "Gender",
+      title: "Gender, settled by the ending",
       Body: () => (
-        <Table head={["Ending", "Article", "Example"]}>
+        <>
+          <Lede>
+            Eight endings decide the article for the overwhelming majority of nouns. El o La argues
+            the case and drills the exceptions; this is the rule to have cold.
+          </Lede>
+          <Table head={["Ending", "Article", "Example"]}>
           {genderEndings.map((r) => (
             <tr key={r.end}>
               <td className="mono term">{r.end}</td>
               <td className="key">{r.g === "f" ? "la" : "el"}</td>
               <td className="dim">{r.ex}</td>
-            </tr>
-          ))}
-        </Table>
+              </tr>
+            ))}
+          </Table>
+        </>
       ),
     },
     {
       id: "endings",
-      title: "Endings worth knowing cold",
+      short: "Verb endings",
+      title: "The verb endings worth knowing cold",
       Body: () => (
-        <Table head={["Form", "Endings"]}>
-          {[...ruleVerbForms, ...ruleVerbEndings].map((r) => (
-            <tr key={r.q}>
-              <td className="term">{r.q}</td>
-              <td className="key mono">{r.a}</td>
-            </tr>
-          ))}
-        </Table>
+        <>
+          <Lede>
+            Three regular paradigms and the handful of tense endings that sit on top of them. Every
+            other region assumes these, so they are the cheapest thing in the app to learn.
+          </Lede>
+          <Table head={["Form", "Endings"]}>
+            {[...ruleVerbForms, ...ruleVerbEndings].map((r) => (
+              <tr key={r.q}>
+                <td className="term">{r.q}</td>
+                <td className="key mono">{r.a}</td>
+              </tr>
+            ))}
+          </Table>
+        </>
       ),
     },
     {
       id: "subjunctive",
+      short: "Subjunctive recipe",
       title: "Building the present subjunctive",
       Body: ({ speak }) => (
         <>
@@ -199,6 +227,7 @@ export const CODEX = {
     },
     {
       id: "accents",
+      short: "Written accents",
       title: "When the accent gets written",
       Body: () => (
         <>
@@ -223,7 +252,8 @@ export const CODEX = {
   suffix: [
     {
       id: "machine",
-      title: "The converter",
+      short: "The converter",
+      title: "Cognates, and the machine that makes them",
       Body: () => (
         <>
           <Lede>
@@ -237,6 +267,7 @@ export const CODEX = {
     },
     {
       id: "table",
+      short: "The full table",
       title: "The full table",
       Body: () => (
         <Table head={["English", "Spanish", "Example", "Watch for"]}>
@@ -253,7 +284,8 @@ export const CODEX = {
     },
     {
       id: "false",
-      title: "False friends",
+      short: "False friends",
+      title: "The handful that lie",
       Body: () => (
         <Lede>
           A handful of these cognates lie. <em>Embarazada</em> is pregnant, not embarrassed;
@@ -267,7 +299,8 @@ export const CODEX = {
   sound: [
     {
       id: "vowels",
-      title: "The five vowels",
+      short: "Five vowels",
+      title: "Five vowels, and no reduction",
       Body: ({ speak }) => (
         <>
           <Lede>
@@ -295,6 +328,7 @@ export const CODEX = {
     },
     {
       id: "consonants",
+      short: "Consonants",
       title: "The consonants that differ",
       Body: ({ speak }) => (
         <Table head={["Letter", "Sound in Mexico", "Hear it"]}>
@@ -312,7 +346,8 @@ export const CODEX = {
     },
     {
       id: "x",
-      title: "The letter x",
+      short: "The letter x",
+      title: "The letter x, which has four values",
       Body: ({ speak }) => (
         <>
           <Lede>
@@ -339,6 +374,7 @@ export const CODEX = {
     },
     {
       id: "stress",
+      short: "Stress",
       title: "Stress is three lines",
       Body: () => (
         <Cards cols={3}>
@@ -357,6 +393,7 @@ export const CODEX = {
   verbs: [
     {
       id: "groups",
+      short: "Three groups",
       title: "Three groups and four rogues",
       Body: () => (
         <>
@@ -388,20 +425,42 @@ export const CODEX = {
               </div>
             </Card>
           </Cards>
-          <Card className="edge" style={{ marginTop: 10 }}>
-            <div className="card-k">Mexico deletes a column</div>
-            <div className="card-v">
-              Vosotros does not exist here. The plural "you" is always <b>ustedes</b>, formal or not,
-              and it conjugates like ellos. Every table below has five forms instead of six, and you
-              can ignore the vosotros column in any textbook you pick up.
-            </div>
-          </Card>
+        </>
+      ),
+    },
+    {
+      id: "ustedes",
+      short: "No vosotros",
+      title: "Mexico deletes a column",
+      Body: () => (
+        <>
+          <Lede>
+            Vosotros does not exist here. The plural "you" is always <em>ustedes</em>, formal or not,
+            and it conjugates like ellos.
+          </Lede>
+          <Cards cols={2}>
+            <Card className="lift">
+              <div className="card-k">Five forms, not six</div>
+              <div className="card-v">
+                Every paradigm in this app has five slots. A textbook printed for Spain has six, and
+                the one you can ignore is always the second-person plural.
+              </div>
+            </Card>
+            <Card className="lift">
+              <div className="card-k">It costs you nothing</div>
+              <div className="card-v">
+                Ustedes conjugates exactly like ellos, so dropping the column removes a whole set of
+                endings rather than adding one.
+              </div>
+            </Card>
+          </Cards>
         </>
       ),
     },
     {
       id: "closed",
-      title: "The closed set",
+      short: "The closed set",
+      title: "The closed set of irregulars",
       Body: ({ speak }) => (
         <Table head={["Verb", "Meaning", "Yo", "Pattern"]}>
           {irregularVerbs.map((v) => (
@@ -422,6 +481,7 @@ export const CODEX = {
   past: [
     {
       id: "preterite",
+      short: "One past tense",
       title: "One past does most of the work",
       Body: () => (
         <>
@@ -448,7 +508,18 @@ export const CODEX = {
               <div className="card-v">Learn tuv-, pus-, dij- and the endings come free. That is the whole trick.</div>
             </Card>
           </Cards>
-          <Card className="edge" style={{ marginTop: 10 }}>
+        </>
+      ),
+    },
+    {
+      id: "strong",
+      short: "Strong preterites",
+      title: "The strong preterites",
+      Body: ({ speak }) => (
+        <>
+          {/* The two wrinkles are facts *about this table*, so they sit above it
+              rather than closing the chapter before it. */}
+          <Card className="edge">
             <div className="card-k">Two wrinkles worth knowing</div>
             <div className="card-v">
               A stem ending in <b>j</b> swallows the i in the ellos form: <b>dijeron</b>, not
@@ -456,14 +527,7 @@ export const CODEX = {
               día</em> and <em>fue al mercado</em> are the same word doing two jobs.
             </div>
           </Card>
-        </>
-      ),
-    },
-    {
-      id: "strong",
-      title: "The strong preterites",
-      Body: ({ speak }) => (
-        <Table head={["Verb", "Stem", "Forms", "Note"]}>
+          <Table head={["Verb", "Stem", "Forms", "Note"]}>
           {preteriteStems.map((v) => (
             <tr key={v.v}>
               <td className="key">
@@ -471,14 +535,16 @@ export const CODEX = {
               </td>
               <td className="mono term accent">{v.stem}</td>
               <td className="dim mono small">{v.f}</td>
-              <td className="dim">{v.n}</td>
-            </tr>
-          ))}
-        </Table>
+                <td className="dim">{v.n}</td>
+              </tr>
+            ))}
+          </Table>
+        </>
       ),
     },
     {
       id: "imperfect",
+      short: "The imperfect",
       title: "The other past tense",
       Body: () => (
         <>
@@ -496,7 +562,19 @@ export const CODEX = {
               </tr>
             ))}
           </Table>
-          <Head>Every irregular verb in the tense</Head>
+        </>
+      ),
+    },
+    {
+      id: "imperfect-irregular",
+      short: "Its three irregulars",
+      title: "Every irregular verb in the tense",
+      Body: () => (
+        <>
+          <Lede>
+            Three. That is the whole list, in the whole tense — which is why the imperfect is the
+            easiest thing in the language to form and the hardest to choose.
+          </Lede>
           <Cards cols={3}>
             {imperfectIrregular.map((v) => (
               <Card className="lift" key={v.v}>
@@ -511,6 +589,7 @@ export const CODEX = {
     },
     {
       id: "choosing",
+      short: "Which one, and why",
       title: "Which one, and why",
       Body: () => (
         <>
@@ -533,11 +612,42 @@ export const CODEX = {
               </tr>
             ))}
           </Table>
-          <Lede style={{ marginTop: 18 }}>
-            Four verbs change meaning rather than just tense. <em>Supe</em> is found out where <em>sabía</em> is
-            knew; <em>conocí</em> is met where <em>conocía</em> is knew of; <em>quiso</em> is tried to
-            and <em>no quiso</em> is refused; <em>pude</em> is managed to.
+        </>
+      ),
+    },
+    {
+      id: "meaning",
+      short: "Four that change",
+      title: "Four verbs change meaning, not just tense",
+      Body: () => (
+        <>
+          <Lede>
+            For most verbs the choice is aspect: the same event, reported or described. For these
+            four it is the word itself that changes, and picking the wrong one says something you
+            did not mean.
           </Lede>
+          <Table head={["Verb", "Preterite", "Imperfect"]}>
+            <tr>
+              <td className="key">saber</td>
+              <td><b>supe</b> — found out</td>
+              <td className="dim">sabía — knew</td>
+            </tr>
+            <tr>
+              <td className="key">conocer</td>
+              <td><b>conocí</b> — met</td>
+              <td className="dim">conocía — knew of</td>
+            </tr>
+            <tr>
+              <td className="key">querer</td>
+              <td><b>quiso</b> — tried to · <b>no quiso</b> — refused</td>
+              <td className="dim">quería — wanted</td>
+            </tr>
+            <tr>
+              <td className="key">poder</td>
+              <td><b>pude</b> — managed to</td>
+              <td className="dim">podía — was able</td>
+            </tr>
+          </Table>
         </>
       ),
     },
@@ -546,7 +656,8 @@ export const CODEX = {
   periphrasis: [
     {
       id: "patterns",
-      title: "Ten patterns",
+      short: "Ten patterns",
+      title: "Ten patterns that replace a tense system",
       Body: ({ speak }) => (
         <>
           <Lede>
@@ -579,7 +690,8 @@ export const CODEX = {
   subjunctive: [
     {
       id: "triggers",
-      title: "Match the phrase",
+      short: "The triggers",
+      title: "Match the phrase, not the feeling",
       Body: () => (
         <>
           <Lede>
@@ -593,6 +705,7 @@ export const CODEX = {
     },
     {
       id: "logic",
+      short: "The logic",
       title: "The logic underneath",
       Body: () => (
         <Lede>
@@ -605,6 +718,7 @@ export const CODEX = {
     },
     {
       id: "past",
+      short: "In the past",
       title: "Once the sentence is in the past",
       Body: () => (
         <>
@@ -636,6 +750,7 @@ export const CODEX = {
     },
     {
       id: "recipe",
+      short: "The recipe",
       title: "The recipe, worked through",
       Body: ({ speak }) => (
         <Table head={["Verb", "Ellos preterite", "Imperfect subjunctive"]}>
@@ -653,6 +768,7 @@ export const CODEX = {
     },
     {
       id: "uses",
+      short: "Where it turns up",
       title: "Where it turns up",
       Body: ({ speak }) => (
         <>
@@ -671,11 +787,36 @@ export const CODEX = {
               </tr>
             ))}
           </Table>
-          <Lede style={{ marginTop: 18 }}>
-            The one error worth burying is <em>si tendría</em>. Si takes the subjunctive and the other
-            half takes the conditional — <em>si tuviera dinero, viajaría</em> — never the reverse, and
-            never two conditionals.
+        </>
+      ),
+    },
+    {
+      id: "si",
+      short: "Never si tendría",
+      title: "The one error worth burying",
+      Body: () => (
+        <>
+          <Lede>
+            <em>Si tendría</em> is the mistake this region exists to prevent. Si takes the
+            subjunctive, and the conditional belongs in the other half of the sentence — never the
+            reverse, and never two conditionals.
           </Lede>
+          <Cards cols={2}>
+            <Card className="lift">
+              <div className="row-flex" style={{ justifyContent: "space-between" }}>
+                <span className="card-k mono">si tuviera dinero, viajaría</span>
+                <span className="pill pill-good">right</span>
+              </div>
+              <div className="card-v">If I had money, I would travel. Subjunctive after si, conditional after the comma.</div>
+            </Card>
+            <Card className="lift">
+              <div className="row-flex" style={{ justifyContent: "space-between" }}>
+                <span className="card-k mono">si tendría dinero…</span>
+                <span className="pill pill-bad">never</span>
+              </div>
+              <div className="card-v">The conditional cannot follow si. This is the half the drills keep coming back to.</div>
+            </Card>
+          </Cards>
         </>
       ),
     },
@@ -684,7 +825,8 @@ export const CODEX = {
   gender: [
     {
       id: "endings",
-      title: "The ending tells you",
+      short: "The endings",
+      title: "The ending tells you, nearly every time",
       Body: () => (
         <>
           <Lede>
@@ -710,7 +852,8 @@ export const CODEX = {
     },
     {
       id: "exceptions",
-      title: "The exceptions, as a group",
+      short: "The exceptions",
+      title: "The exceptions, learned as a group",
       Body: ({ speak }) => (
         <Table head={["Word", "Article", "Why it surprises"]}>
           {genderExceptionTable.map(([word, article, why]) => (
@@ -730,6 +873,7 @@ export const CODEX = {
   mexicanismos: [
     {
       id: "swaps",
+      short: "The swaps",
       title: "The swaps that matter",
       Body: ({ speak }) => (
         <>
@@ -755,6 +899,7 @@ export const CODEX = {
     },
     {
       id: "diminutives",
+      short: "Diminutives",
       title: "The diminutive is politeness",
       Body: ({ speak }) => (
         <>
@@ -779,6 +924,7 @@ export const CODEX = {
     },
     {
       id: "register",
+      short: "Register",
       title: "Register, safest to riskiest",
       Body: () => (
         <Cards cols={3}>
@@ -820,7 +966,8 @@ export const CODEX = {
   connectors: [
     {
       id: "phrases",
-      title: "Stalling, well executed",
+      short: "The connectors",
+      title: "Fluency is mostly stalling, well executed",
       Body: ({ speak }) => (
         <>
           <Lede>
@@ -848,6 +995,7 @@ export const CODEX = {
   arena: [
     {
       id: "why",
+      short: "Why interleave",
       title: "Why everything at once",
       Body: () => (
         <>

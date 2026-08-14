@@ -34,11 +34,6 @@ export function Lede({ children, style }) {
   );
 }
 
-/* A heading inside a codex entry. */
-export function Head({ children }) {
-  return <h3>{children}</h3>;
-}
-
 /* The small stat/reference cards, in a grid that reflows down to one column. */
 export function Cards({ cols = 3, children }) {
   return <div className={"grid g" + cols}>{children}</div>;
