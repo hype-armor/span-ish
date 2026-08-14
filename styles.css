@@ -648,6 +648,13 @@ body {
 .requeue-l span {
   font-family: 'IBM Plex Mono', monospace; font-size: clamp(11px, 1.7vh, 12px); font-weight: 500;
   background: var(--card); color: var(--bad); padding: 3px 8px; border-radius: 7px;
+  /* A dictation card's label is a whole sentence, and on a narrow screen one
+     of those wraps to three rows and eats the budget the whole screen has.
+     Truncated with the full text on hover and in the title. */
+  /* Also capped as a share of the row, so a narrow window fits two to a line
+     instead of one — five chips one per line is most of the height budget on a
+     280px screen. On a real phone 47% is wider than 24ch, so nothing changes. */
+  max-width: min(24ch, 47%); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
 /* ---------- today ---------- */
