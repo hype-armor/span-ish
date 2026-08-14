@@ -246,6 +246,17 @@ async function assertNoScroll(page, where) {
   const tally = await page.$$eval(".tally-n", (els) => els.map((e) => e.textContent.trim()));
   if (!tally.length || !/^\+\d+$/.test(tally[0])) fail(`the results screen showed no XP (${tally.join(", ") || "nothing"})`);
   else pass(`the results screen paid out ${tally[0]} XP`);
+
+  /* A first mission always earns the "First mission" badge, so the row that
+     reports what a run won has to be there. Quest chips render through the
+     same row; which quests a given day draws is decided by the date, so they
+     cannot be forced from here — questProgress is unit-tested instead. */
+  {
+    const won = await page.$$eval(".badge-chip", (els) => els.map((e) => e.textContent.trim()));
+    if (!won.some((t) => /First mission/.test(t))) {
+      fail(`a first mission reported no badge (${won.join(", ") || "nothing"})`);
+    } else pass("and it reports what the run won");
+  }
   await assertNoScroll(page, "results");
 
   /* clearing a mission has to open the next one */

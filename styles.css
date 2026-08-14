@@ -622,6 +622,8 @@ body {
   font-size: 12px; font-weight: 700; padding: 5px 11px; border-radius: 999px;
   background: var(--accent-tint); color: var(--accent);
 }
+/* A quest finished is a smaller thing than a badge earned, and reads as one. */
+.badge-chip.quest-chip { background: var(--good-tint); color: var(--good); }
 .requeue {
   margin: 16px auto 0; max-width: 44ch; text-align: left;
   background: var(--bad-tint); border-radius: var(--r-sm); padding: 12px 14px;
