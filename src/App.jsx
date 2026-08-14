@@ -7,6 +7,7 @@ import { PROGRESS_KEYS, THEME_KEYS, readFirst } from "./lib/storage.js";
 import {
   regionById, stagesFor, recordMission, rollDay, awardBadges, masteryPoints,
   levelFor, titleFor, streakStatus, unlockedRegions, stagesCleared, REGIONS,
+  dayKey, questsFor, questProgress,
 } from "./lib/game.js";
 import { configure as configureJuice } from "./lib/juice.js";
 
@@ -143,6 +144,13 @@ export function App() {
     const pointsBefore = masteryPoints(before.items, ALL_IDS);
     const pointsAfter = masteryPoints(items, ALL_IDS);
 
+    /* Quests are read on both sides of the mission so the results screen can
+       say which ones this run finished. Measured against the day the mission
+       was played, not the day the app was opened. */
+    const rolled = rollDay(before.game, now);
+    const today = questsFor(dayKey(now));
+    const questsWere = today.map((q) => questProgress(rolled, q));
+
     const played = recordMission(before.game, { answers, mode, region, stage, score, now });
     const summaryAfter = summarise(items, now, ALL_IDS, ALL_ID_SET);
     const open = unlockedRegions(played.game);
@@ -158,9 +166,15 @@ export function App() {
       due: summaryAfter.due,
     });
 
+    const questsDone = today
+      .map((q, i) => ({ quest: questProgress(awarded.game, q), was: questsWere[i] }))
+      .filter(({ quest, was }) => quest.done && !was.done)
+      .map(({ quest }) => quest);
+
     setProgress({ scores, items, reviews, game: awarded.game });
 
     return {
+      quests: questsDone,
       xp: played.xp,
       combo: played.combo,
       flawless: played.flawless,

@@ -11,7 +11,7 @@ const RADIUS = 46;
  * first, what it did to the schedule second, and the game's own scoring last.
  * XP is the least important thing on this screen and is laid out like it. */
 export function MissionResult({ region, stage, outcome, onRestart, onExit, motion, canvasRef }) {
-  const { results, won, xp, combo, flawless, cram, level, badges } = outcome;
+  const { results, won, xp, combo, flawless, cram, level, badges, quests } = outcome;
   const right = results.filter((r) => r.right).length;
   const total = results.length;
   const percent = total ? Math.round((right / total) * 100) : 0;
@@ -133,9 +133,12 @@ export function MissionResult({ region, stage, outcome, onRestart, onExit, motio
                 : "Correct answers moved further out. The misses reset to zero and are due again now."}
             </p>
 
-            {badges && badges.length > 0 && (
+            {((quests && quests.length > 0) || (badges && badges.length > 0)) && (
               <div className="badges-won">
-                {badges.map((b) => (
+                {(quests || []).map((q) => (
+                  <span key={q.id} className="badge-chip quest-chip">✓ {q.text}</span>
+                ))}
+                {(badges || []).map((b) => (
                   <span key={b.id} className="badge-chip">🏅 {b.text}</span>
                 ))}
               </div>

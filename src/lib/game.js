@@ -79,7 +79,6 @@ export const REGIONS = [
   },
 ];
 
-export const REGION_IDS = REGIONS.map((r) => r.id);
 export const regionById = (id) => REGIONS.find((r) => r.id === id) || null;
 
 /* How the missions escalate. Every region runs the same four, with its own
@@ -152,11 +151,6 @@ export function rankOf(item) {
   return "learning";
 }
 
-export const RANKS = ["unseen", "shaky", "learning", "solid", "mature", "burnished"];
-export const RANK_LABEL = {
-  unseen: "unmet", shaky: "shaky", learning: "learning",
-  solid: "solid", mature: "mature", burnished: "burnished",
-};
 const RANK_WEIGHT = { unseen: 0, shaky: 1, learning: 2, solid: 4, mature: 7, burnished: 10 };
 
 /* The only number the level is derived from. Grinding an easy card cannot
