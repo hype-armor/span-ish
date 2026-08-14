@@ -145,7 +145,7 @@ export function MissionResult({ region, stage, outcome, onRestart, onExit, motio
               <div className="requeue">
                 <div className="requeue-h">Reset and due now</div>
                 <div className="requeue-l">
-                  {missed.map((m, i) => <span key={i}>{Array.isArray(m.canon) ? m.canon[0] : m.canon}</span>)}
+                  {missed.map((m, i) => <span key={i}>{m.label}</span>)}
                 </div>
               </div>
             )}

@@ -424,6 +424,12 @@ body {
 
 .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; min-height: 20px; }
 .listen { text-align: center; margin-bottom: 6px; }
+.no-voice {
+  font-size: 12.5px; line-height: 1.5; color: var(--bad);
+  max-width: 40ch; margin: 8px auto 0;
+}
+/* A flick answers an ambush, so the browser must not claim the gesture first. */
+.ambush { touch-action: pan-y; }
 .prompt {
   font-size: clamp(20px, 5vw, 30px); font-weight: 700; letter-spacing: -.02em;
   line-height: 1.25; margin-bottom: 8px;

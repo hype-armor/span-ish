@@ -21,6 +21,10 @@ const BOSS_HP_PER_CARD = 10;
 const BOSS_HEAL = 7;
 const HEARTS = { boss: 3, sudden: 1 };
 
+/* Dictation is unanswerable without a voice, and silently playing nothing
+   looks like a broken button rather than a missing feature. */
+const VOICE = typeof window !== "undefined" && "speechSynthesis" in window;
+
 /* One mission.
  *
  * The loop underneath is the same one the drill has always run — ask, take a
@@ -52,7 +56,6 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
   const [chosen, setChosen] = useState(null);
   const [results, setResults] = useState([]);
   const [combo, setCombo] = useState(0);
-  const [bestCombo, setBestCombo] = useState(0);
   const [hp, setHp] = useState(stage.size * BOSS_HP_PER_CARD);
   const [hearts, setHearts] = useState(HEARTS[mode] || 0);
   const [flash, setFlash] = useState(null); // a damage number, briefly
@@ -105,8 +108,7 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
 
       setVerdict(right ? "right" : "wrong");
       setCombo(nextCombo);
-      setBestCombo((b) => Math.max(b, nextCombo));
-      setResults((prev) => [...prev, { id: card.id, right, wasDue, canon: card.canon || card.a, given }]);
+      setResults((prev) => [...prev, { id: card.id, right, wasDue, label: labelFor(card), given }]);
 
       if (right) {
         sfx.right(nextCombo);
@@ -191,7 +193,6 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
     setChosen(null);
     setResults([]);
     setCombo(0);
-    setBestCombo(0);
     setHp(stage.size * BOSS_HP_PER_CARD);
     setHearts(HEARTS[mode] || 0);
     setOutcome(null);
@@ -243,6 +244,23 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [card, answered, outcome, advance, glossOpen]);
+
+  /* Ambush is two forms and a thumb. A flick left or right answers it without
+     looking away from the sentence, which is the whole point of the mode —
+     tapping the buttons still works, and is what a mouse does. */
+  const flick = useRef(null);
+  const onAmbushDown = (e) => {
+    if (answered || e.pointerType === "mouse") return;
+    flick.current = { x: e.clientX, y: e.clientY };
+  };
+  const onAmbushUp = (e) => {
+    const from = flick.current;
+    flick.current = null;
+    if (!from || answered) return;
+    const dx = e.clientX - from.x;
+    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(e.clientY - from.y)) return;
+    choose(card.opts[dx < 0 ? 0 : 1]);
+  };
 
   /* Accent buttons insert at the caret rather than appending. */
   const insert = (ch) => {
@@ -334,6 +352,12 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
                   onClick={() => speak(card.audio)}
                   aria-label="Play the word again"
                 >▶</button>
+                {!VOICE && (
+                  <p className="no-voice">
+                    This browser has no speech synthesis, so there is nothing to hear. Dictation needs
+                    one — every other mission works without it.
+                  </p>
+                )}
               </div>
             ) : (
               <div className={"prompt" + (hasBlank ? " mono" : "")}>
@@ -353,7 +377,11 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
             </p>
 
             {card.kind === "mc" ? (
-              <div className={ambush ? "ambush" : "opts"}>
+              <div
+                className={ambush ? "ambush" : "opts"}
+                onPointerDown={ambush ? onAmbushDown : undefined}
+                onPointerUp={ambush ? onAmbushUp : undefined}
+              >
                 {card.opts.map((option, i) => {
                   const state = !answered ? undefined
                     : option === card.a ? "right"
@@ -459,6 +487,20 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
       </footer>
     </div>
   );
+}
+
+/* How a card is named on the results screen.
+ *
+ * The answer on its own is often not an identity: a gender card's answer is
+ * "el" or "la", and a list of those tells you nothing about which nouns you
+ * missed. Where the prompt is short enough to fit on a chip, it goes in front
+ * of the answer; a sentence prompt is too long, but its answer — a verb form —
+ * identifies the card by itself. */
+function labelFor(card) {
+  const answer = card.canon || (Array.isArray(card.a) ? card.a[0] : card.a);
+  const prompt = String(card.q || "").replace(/⌷/g, "___").trim();
+  if (card.kind === "mc" && prompt && prompt.length <= 20) return `${prompt} → ${answer}`;
+  return answer;
 }
 
 /* What this card is to you, said before you answer it. Knowing an item is one

@@ -288,6 +288,68 @@ async function assertNoScroll(page, where) {
   }
   pass("every region's codex renders its reference material");
 
+  /* Every region's signature mission has to be able to build a round. A mode
+     narrows the deck — By Ear wants the dictation, Ambush wants the two-way
+     discriminations — and a region whose slice is too thin is supposed to fall
+     back to the whole deck rather than hand out a four-card mission. Nothing
+     else would notice that going wrong. */
+  for (const region of REGIONS) {
+    await open.click('.dock-btn[aria-label^="Ruta"]');
+    await open.waitForTimeout(120);
+    await open.click(`.map-cell:has(.node-label:text-is("${region}")) .node`);
+    await open.waitForSelector(".region-screen", { timeout: 5000 });
+
+    const mode = await open.$eval('.stage-btn:nth-of-type(2)', (e) => e.dataset.mode);
+    await open.click('.stage-btn:nth-of-type(2)');
+    await open.waitForSelector(".mission", { timeout: 5000 });
+
+    const shape = await open.evaluate(() => ({
+      cards: (document.querySelector(".mission-count") || {}).textContent || "",
+      answerable: !!document.querySelector(".opt, .ambush-opt, input.answer-input"),
+      audible: !!document.querySelector(".speak-xl"),
+    }));
+    const size = Number((shape.cards.split("/")[1] || "0").trim());
+    if (size < 8) fail(`${region}: its ${mode} mission built a round of ${size} cards`);
+    if (!shape.answerable) fail(`${region}: its ${mode} mission rendered no way to answer`);
+    if (mode === "ear" && !shape.audible) fail(`${region}: By Ear rendered no play button`);
+    await open.click('.icon-btn[aria-label="Leave this mission"]');
+    await open.waitForSelector(".region-screen", { timeout: 5000 });
+  }
+  pass("every region's signature mission builds a full round it is possible to answer");
+
+  /* The clock has to actually run out, and running out has to behave like any
+     other failed attempt: the answer and the reason, not a skipped card. */
+  {
+    await open.click('.dock-btn[aria-label^="Ruta"]');
+    await open.waitForTimeout(120);
+    await open.click('.map-cell:has(.node-label:text-is("El o La")) .node');
+    await open.waitForSelector(".region-screen", { timeout: 5000 });
+    await open.click('.stage-btn[data-mode="ambush"]');
+    await open.waitForSelector(".mission.mode-ambush", { timeout: 5000 });
+
+    const before = await open.$eval(".clock > i", (e) => parseFloat(e.style.width));
+    await open.waitForTimeout(1400);
+    const during = await open.$eval(".clock > i", (e) => parseFloat(e.style.width)).catch(() => null);
+    if (during === null || during >= before) fail(`the ambush clock did not run down (${before}% then ${during}%)`);
+    else pass("the clock runs down on a card answered by choosing");
+
+    /* Ambush allows seven seconds; wait it out without touching anything. */
+    await open.waitForSelector(".feedback", { timeout: 12000 });
+    const timedOut = await open.evaluate(() => ({
+      verdict: (document.querySelector(".verdict-text") || {}).textContent || "",
+      why: ((document.querySelector(".why") || {}).textContent || "").length,
+      bad: !!document.querySelector(".verdict-bad"),
+    }));
+    if (!timedOut.bad) fail("running out of time was not recorded as a miss");
+    else pass("running out of time counts as a miss");
+    if (!/answer is/.test(timedOut.verdict) || timedOut.why < 20) {
+      fail("a timed-out card did not show its answer and its reason");
+    } else pass("  and it still shows the answer and the reason");
+
+    await open.click('.icon-btn[aria-label="Leave this mission"]');
+    await open.waitForSelector(".region-screen", { timeout: 5000 });
+  }
+
   /* Sudden death has to actually end on a miss, and must not clear its stage
      by ending. Getting this wrong would hand out the boss for free. */
   {
@@ -300,16 +362,35 @@ async function assertNoScroll(page, where) {
     await open.click('.stage-btn[data-mode="sudden"]');
     await open.waitForSelector(".mission.mode-sudden", { timeout: 5000 });
 
+    /* Alternate the two options so a miss turns up quickly, and play more than
+       one run if a lucky one reaches the end without ever being wrong. */
     let missed = false;
-    for (let i = 0; i < 20 && !missed; i++) {
-      const opts = await open.$$(".opt:not([disabled])");
-      if (!opts.length) break;
-      await opts[0].click();
-      await open.waitForTimeout(120);
-      missed = !!(await open.$('.opt[data-s="wrong"]'));
-      await open.click(".mission-foot button");
-      await open.waitForTimeout(200);
+    for (let run = 0; run < 4 && !missed; run++) {
+      if (run > 0) {
+        await open.click('.mission-foot button:has-text("Run it again")');
+        await open.waitForSelector(".mission.mode-sudden .opt", { timeout: 5000 });
+      }
+      for (let i = 0; i < 20 && !missed; i++) {
+        const opts = await open.$$(".opt:not([disabled])");
+        const input = await open.$("input.answer-input:not([disabled])");
+        /* The subjunctive deck mixes choices with typed forms. Alternate the
+           options to turn a miss up quickly; on a typed card, "I don't know"
+           is a miss by definition and gets there in one. */
+        if (opts.length) await opts[i % opts.length].click();
+        else if (input) await open.click(`.mission-foot button:has-text("I don't know")`);
+        else break;
+        await open.waitForTimeout(140);
+        /* Reads the verdict rather than the option marks: a typed card has no
+           options to mark, and the correct option is marked either way. */
+        missed = !!(await open.$(".verdict-bad"));
+        const next = await open.$(".mission-foot button");
+        if (!next) break;
+        await next.click();
+        await open.waitForTimeout(220);
+        if (await open.$(".result")) break;
+      }
     }
+
     if (!missed) fail("could not produce a miss in sudden death, so the check proved nothing");
     else {
       const over = await open.$(".result");
@@ -319,10 +400,25 @@ async function assertNoScroll(page, where) {
       if (headline !== "Run ended") fail(`sudden death ended with "${headline}" rather than reporting the loss`);
       else pass("  and it is reported as a loss, not a completion");
 
-      await open.click('.mission-foot button:has-text("Back to")');
-      await open.waitForSelector(".region-screen", { timeout: 5000 });
-      const cleared = await open.$eval('.stage-btn[data-mode="sudden"]', (e) => e.dataset.done);
-      if (cleared === "true") fail("dying in sudden death cleared the stage anyway");
+      /* A missed card has to be nameable afterwards. On a gender card the
+         answer is "el" or "la", so a list of answers names nothing — the
+         prompt has to come with it. */
+      const named = await open.$$eval(".requeue-l span", (els) => els.map((e) => e.textContent.trim()));
+      if (!named.length) fail("a lost run listed nothing as reset and due");
+      else if (named.some((t) => t.length <= 3)) {
+        fail(`the missed list names a card as "${named.find((t) => t.length <= 3)}", which identifies nothing`);
+      } else pass("  and the missed cards are named in a way you could look up");
+    }
+
+    /* Whatever state the run ended in, get back to a screen with a dock. */
+    const back = await open.$('.mission-foot button:has-text("Back to")');
+    if (back) await back.click();
+    else await open.click('.icon-btn[aria-label="Leave this mission"]');
+    await open.waitForSelector(".region-screen", { timeout: 5000 });
+
+    if (missed) {
+      const done = await open.$eval('.stage-btn[data-mode="sudden"]', (e) => e.dataset.done);
+      if (done === "true") fail("dying in sudden death cleared the stage anyway");
       else pass("  and dying does not clear the stage");
     }
   }
@@ -358,9 +454,9 @@ async function assertNoScroll(page, where) {
         if (!opts.length) break;
         await opts[i % 2].click();
         await open.waitForTimeout(220);
-        /* The correct option is marked whether or not it was the one clicked,
-           so only the wrong mark says anything about what was answered. */
-        const missedIt = !!(await open.$('.opt[data-s="wrong"]'));
+        /* The verdict, not the option marks: the correct option is marked
+           whether or not it was the one clicked. */
+        const missedIt = !!(await open.$(".verdict-bad"));
         if (!missedIt && (await width()) < full) wounded = true;
         if (missedIt && (await hearts()) < startHearts) spent = true;
         const next = await open.$(".mission-foot button");
