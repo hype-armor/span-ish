@@ -616,10 +616,16 @@ body {
   background: var(--accent-tint); color: var(--accent); font-size: 13px; font-weight: 700;
   animation: pop .5s cubic-bezier(.3,1.4,.5,1);
 }
-.tally { display: flex; justify-content: center; gap: 8px; margin: 0; }
+/* Wraps rather than running off the side. Three cells at their minimum plus
+   the gaps come to about 310px, so anything narrower than a 320px phone had
+   the third one hanging over the edge. */
+/* Wraps rather than running off the side. Three cells at a fixed width plus
+   the gaps come to more than a very narrow window has, and the frame clips
+   without a scrollbar, so anything over the edge is simply gone. */
+.tally { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 0; }
 .tally-cell {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--r-sm);
-  padding: clamp(6px, 1.2vh, 9px) 16px; min-width: 70px;
+  padding: clamp(6px, 1.2vh, 9px) clamp(10px, 4vw, 16px); min-width: 62px;
 }
 .tally-n { display: block; font-size: clamp(16px, 2.6vh, 19px); font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .tally-l { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); margin-top: 1px; }
