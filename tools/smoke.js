@@ -113,6 +113,27 @@ async function assertPageFixed(page, where) {
   return bad.length === 0;
 }
 
+/* Wait for the entrance animations to land before measuring anything.
+ *
+ * A card arrives with `transform: translateY(10px)`, and a transform counts
+ * towards its parent's scrollable overflow — so a screen measured two thirds
+ * of the way through its own animation reports a couple of pixels of overflow
+ * that will not exist a moment later. That is how a results screen with 1000px
+ * of room to spare came to "clip 2px" on a slower machine.
+ *
+ * Infinite animations are skipped, or this would wait forever on the pulsing
+ * play button. */
+async function settled(page) {
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect && a.effect.getTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => {})),
+    ),
+  ).catch(() => {});
+}
+
 /* Rule two, on a card: everything the question needs is on screen at once.
    Checked as "nothing is clipped", which catches both a scrollbar and the
    quieter failure — content cut off by `overflow: hidden` with no way to
@@ -124,6 +145,7 @@ async function assertPageFixed(page, where) {
    line box, and it is painted in full. Flagging that reports a layout fact as
    a lost sentence. */
 async function assertCardFits(page, where) {
+  await settled(page);
   const bad = await page.evaluate(() => {
     const out = [];
     const card = document.querySelector(".mission");
