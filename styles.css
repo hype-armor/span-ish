@@ -587,54 +587,60 @@ body {
 
 /* ---------- results ---------- */
 
-/* The results screen is a report rather than a question — how long it is
-   depends on how many badges, quests and missed cards a run produced — so this
-   one scrolls. The rule it has to keep is that the footer stays put. */
+/* The results screen fits, like everything else inside a mission. What made
+   that hard was the two lists with no natural length — what the run won, and
+   what it reset — so both are capped in Results.jsx and summarised past the
+   cap. Everything else here shrinks with the height available. */
 .result {
-  flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 0;
-  text-align: center; animation: rise .35s cubic-bezier(.2,.8,.3,1) both; padding: 6px 0;
+  height: 100%; display: flex; flex-direction: column; justify-content: center; min-height: 0;
+  text-align: center; animation: rise .35s cubic-bezier(.2,.8,.3,1) both;
+  padding: clamp(2px, 1vh, 6px) 0; gap: clamp(2px, .8vh, 6px);
 }
+.result > * { flex: none; }
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-.ring { position: relative; width: clamp(78px, 14vh, 108px); height: clamp(78px, 14vh, 108px); margin: 0 auto 4px; }
+.ring { position: relative; width: clamp(66px, 13vh, 104px); height: clamp(66px, 13vh, 104px); margin: 0 auto; flex: none; }
 .ring svg { display: block; transform: rotate(-90deg); width: 100%; height: 100%; }
 .ring circle { fill: none; stroke-width: 8; stroke-linecap: round; }
 .ring .track { stroke: var(--line-soft); }
 .ring .fill { transition: stroke-dashoffset 1s cubic-bezier(.2,.8,.3,1); }
 .ring-mid { position: absolute; inset: 0; display: grid; place-content: center; }
-.ring-n { font-size: 27px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
-.ring-l { font-size: 10.5px; font-weight: 600; color: var(--faint); letter-spacing: .06em; text-transform: uppercase; }
-.result-h { font-size: 19px; font-weight: 800; margin: 8px 0 4px; letter-spacing: -.02em; }
-.result-p { font-size: 13.5px; color: var(--muted); margin: 10px auto 0; max-width: 42ch; line-height: 1.55; }
-.result-note { font-size: 13px; margin: 10px auto 0; max-width: 44ch; line-height: 1.55; }
+.ring-n { font-size: clamp(19px, 3.4vh, 27px); font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.ring-l { font-size: clamp(9px, 1.4vh, 10.5px); font-weight: 600; color: var(--faint); letter-spacing: .06em; text-transform: uppercase; }
+.result-h { font-size: clamp(16px, 2.7vh, 19px); font-weight: 800; margin: 0; letter-spacing: -.02em; }
+.result-p { font-size: clamp(12px, 1.8vh, 13.5px); color: var(--muted); margin: 0 auto; max-width: 42ch; line-height: 1.5; }
+.result-note { font-size: clamp(11.5px, 1.75vh, 13px); margin: 0 auto; max-width: 44ch; line-height: 1.45; }
 .result-note.warn { color: var(--accent); }
 .result-note.good { color: var(--good); font-weight: 600; }
 .levelup {
-  display: inline-block; margin: 4px 0 2px; padding: 5px 13px; border-radius: 999px;
+  display: inline-block; margin: 0 auto; padding: 4px 13px; border-radius: 999px;
   background: var(--accent-tint); color: var(--accent); font-size: 13px; font-weight: 700;
   animation: pop .5s cubic-bezier(.3,1.4,.5,1);
 }
-.tally { display: flex; justify-content: center; gap: 10px; margin-top: 14px; }
+.tally { display: flex; justify-content: center; gap: 8px; margin: 0; }
 .tally-cell {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--r-sm);
-  padding: 9px 16px; min-width: 74px;
+  padding: clamp(6px, 1.2vh, 9px) 16px; min-width: 70px;
 }
-.tally-n { display: block; font-size: 19px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.tally-n { display: block; font-size: clamp(16px, 2.6vh, 19px); font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .tally-l { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); margin-top: 1px; }
-.badges-won { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 14px; }
+.badges-won { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin: 0; }
 .badge-chip {
-  font-size: 12px; font-weight: 700; padding: 5px 11px; border-radius: 999px;
+  font-size: clamp(11px, 1.7vh, 12px); font-weight: 700; padding: 4px 10px; border-radius: 999px;
   background: var(--accent-tint); color: var(--accent);
 }
+.badge-chip.more, .requeue-l .more { background: var(--line-soft); color: var(--faint); }
 /* A quest finished is a smaller thing than a badge earned, and reads as one. */
 .badge-chip.quest-chip { background: var(--good-tint); color: var(--good); }
 .requeue {
-  margin: 16px auto 0; max-width: 44ch; text-align: left;
-  background: var(--bad-tint); border-radius: var(--r-sm); padding: 12px 14px;
+  margin: 0 auto; max-width: 44ch; text-align: left; width: 100%; box-sizing: border-box;
+  background: var(--bad-tint); border-radius: var(--r-sm);
+  padding: clamp(8px, 1.4vh, 12px) 14px;
 }
-.requeue-h { font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--bad); margin-bottom: 7px; }
+.requeue-h { font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--bad); margin-bottom: 6px; }
+.requeue-h b { font-weight: 700; opacity: .75; }
 .requeue-l { display: flex; flex-wrap: wrap; gap: 6px; }
 .requeue-l span {
-  font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500;
+  font-family: 'IBM Plex Mono', monospace; font-size: clamp(11px, 1.7vh, 12px); font-weight: 500;
   background: var(--card); color: var(--bad); padding: 3px 8px; border-radius: 7px;
 }
 

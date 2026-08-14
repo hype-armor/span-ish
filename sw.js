@@ -3,7 +3,7 @@
    CACHE is written by `npm run build` — it is a hash of every file in SHELL
    below, so republishing changes it on its own and the stale cache is dropped.
    Don't edit it by hand; edit SHELL and rebuild. See tools/cache-name.js. */
-const CACHE = "mx-shortcuts-51b1d6298706";
+const CACHE = "mx-shortcuts-3f3daf5c0ac3";
 const SHELL = [
   "./",
   "./index.html",

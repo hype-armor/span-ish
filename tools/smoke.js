@@ -310,15 +310,10 @@ async function assertScrolls(page, where) {
       fail(`a first mission reported no badge (${won.join(", ") || "nothing"})`);
     } else pass("and it reports what the run won");
   }
-  /* The results screen is a report, not a question: it scrolls, and the only
-     rule it owes is that the footer does not go with it. */
+  /* The results screen fits too. It is the end of a mission, and a mission is
+     a thing that fits. */
   await assertPageFixed(page, "the results screen");
-  await assertScrolls(page, "the results screen");
-  {
-    const footer = await page.$eval(".mission-foot", (e) => e.getBoundingClientRect().bottom <= window.innerHeight + 1);
-    if (!footer) fail("the results footer is off the bottom of the window");
-    else pass("the results screen keeps its footer while the report scrolls");
-  }
+  if (await assertCardFits(page, "the results screen")) pass("the results screen fits");
 
   /* clearing a mission has to open the next one */
   await page.click('.mission-foot button:has-text("Back to")');
@@ -507,6 +502,53 @@ async function assertScrolls(page, where) {
     }
 
     if (clean) pass(`${checked} cards fit ${SMALL.width}×${SMALL.height} answered and unanswered`);
+
+    /* And the worst results screen the app can produce, at the same size: a
+       long run answered badly, which is what the caps on the two lists are
+       for. A twelve-card Arena run misses most of them, and picks up a badge
+       and a level on the way. */
+    await open.click('.dock-btn[aria-label^="Ruta"]');
+    await open.waitForTimeout(120);
+    await open.click('.map-cell:has(.node-label:text-is("La Arena")) .node');
+    await open.waitForSelector(".region-screen", { timeout: 5000 });
+    await open.click(".stage-btn:not([disabled])");
+    await open.waitForSelector(".mission", { timeout: 5000 });
+
+    for (let i = 0; i < 30; i++) {
+      const opts = await open.$$(".opt:not([disabled]), .ambush-opt:not([disabled])");
+      const input = await open.$("input.answer-input:not([disabled])");
+      if (opts.length) await opts[0].click();
+      else if (input) await open.click(`.mission-foot button:has-text("I don't know")`);
+      else break;
+      await open.waitForTimeout(120);
+      const next = await open.$(".mission-foot button");
+      if (!next) break;
+      await next.click();
+      await open.waitForTimeout(150);
+      if (await open.$(".result")) break;
+    }
+
+    if (!(await open.$(".result"))) fail("the long run never reached its results");
+    else {
+      const shape = await open.evaluate(() => ({
+        missed: document.querySelectorAll(".requeue-l span").length,
+        capped: !!document.querySelector(".requeue-l .more"),
+        spoils: document.querySelectorAll(".badge-chip").length,
+      }));
+      if (await assertCardFits(open, `a bad ${SMALL.width}×${SMALL.height} run's results`)) {
+        pass(`the worst results screen fits too (${shape.missed} chips, ${shape.spoils} won)`);
+      }
+      /* The cap only proves itself when it is reached; a lucky run is not a
+         failure, it just did not test this. */
+      if (shape.capped) pass("  and a list longer than the cap says how much more there was");
+      else if (shape.missed > 6) fail("more misses than the cap, but nothing summarising the rest");
+    }
+
+    const leave = await open.$('.mission-foot button:has-text("Back to")');
+    if (leave) await leave.click();
+    else await open.click('.icon-btn[aria-label="Leave this mission"]');
+    await open.waitForSelector(".region-screen", { timeout: 5000 });
+
     await open.setViewportSize({ width: 1000, height: 1200 });
     await open.waitForTimeout(220);
   }
