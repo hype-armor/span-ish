@@ -30,6 +30,7 @@ export function Drill({ mod, label, progress, record, speak, count }) {
 
   const recorded = useRef(false);
   const inputRef = useRef(null);
+  const bodyRef = useRef(null);
 
   const card = round[index];
   const answered = verdict !== "open";
@@ -49,7 +50,17 @@ export function Drill({ mod, label, progress, record, speak, count }) {
     if (!card) return;
     if (!started.current) { started.current = true; return; }
     if (card.listen) speak(card.audio);
-    if (card.kind === "type" && inputRef.current) inputRef.current.focus({ preventScroll: true });
+    if (card.kind === "type" && inputRef.current) {
+      inputRef.current.focus({ preventScroll: true });
+    } else if (bodyRef.current) {
+      /* Advancing removes the button that had focus, and where focus goes next
+         is up to the engine: Chromium drops it on <body>, iOS hands it to the
+         next focusable element — the first option of the card that just
+         appeared, which then draws a focus ring and reads as already chosen.
+         Park it somewhere harmless instead, which also points a screen reader
+         at the new question rather than leaving it stranded. */
+      bodyRef.current.focus({ preventScroll: true });
+    }
   }, [index, card, speak]);
 
   const settle = useCallback(
@@ -162,7 +173,7 @@ export function Drill({ mod, label, progress, record, speak, count }) {
         <div className="bar"><i style={{ width: percent + "%" }} /></div>
       </div>
 
-      <div className="qbody" key={index}>
+      <div className="qbody" key={index} ref={bodyRef} tabIndex={-1}>
         <div className="tags">{statusPill(card, history)}</div>
 
         {card.listen ? (
