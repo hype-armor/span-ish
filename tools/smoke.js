@@ -101,19 +101,30 @@ async function assertPageFixed(page, where) {
 }
 
 /* Rule two, on a card: everything the question needs is on screen at once.
-   Checked as "nothing inside the card is taller than the room it has", which
-   catches both a scrollbar and the quieter failure — content clipped by
-   `overflow: hidden` with no way to reach it. */
+   Checked as "nothing is clipped", which catches both a scrollbar and the
+   quieter failure — content cut off by `overflow: hidden` with no way to
+   reach it at all.
+
+   Only elements that actually clip are asked. An element whose overflow is
+   visible does not hide anything by overflowing: the blank in a fill-in
+   prompt is an inline-block whose underline sits a couple of pixels below the
+   line box, and it is painted in full. Flagging that reports a layout fact as
+   a lost sentence. */
 async function assertCardFits(page, where) {
   const bad = await page.evaluate(() => {
     const out = [];
     const card = document.querySelector(".mission");
     if (!card) return ["no card on screen"];
-    for (const el of card.querySelectorAll("*")) {
+    for (const el of [card, ...card.querySelectorAll("*")]) {
       if (el.closest(".tablewrap")) continue; // a wide table scrolls sideways on purpose
-      const over = el.scrollHeight - el.clientHeight;
-      if (over > 1 && el.clientHeight > 0) {
-        out.push(`${el.className || el.tagName} hides ${over}px of its content`);
+      const style = getComputedStyle(el);
+      const clipsY = style.overflowY !== "visible";
+      const clipsX = style.overflowX !== "visible";
+      if (clipsY && el.scrollHeight - el.clientHeight > 1 && el.clientHeight > 0) {
+        out.push(`${el.className || el.tagName} clips ${el.scrollHeight - el.clientHeight}px off the bottom`);
+      }
+      if (clipsX && el.scrollWidth - el.clientWidth > 1 && el.clientWidth > 0) {
+        out.push(`${el.className || el.tagName} clips ${el.scrollWidth - el.clientWidth}px off the side`);
       }
     }
     return out.slice(0, 3);
