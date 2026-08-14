@@ -132,7 +132,17 @@ in the way and never actually studied. It is now a codex you open on purpose.
 Nothing was dropped in the move — every table, every paragraph — but nothing is
 passively scrolled past on the way to a card either.
 
-The two halves are also built differently, and deliberately. A codex entry
+A region's codex is several chapters rather than one page, and the chapters
+break where the argument breaks — not where the screen runs out. A chapter is
+one idea with a title that covers all of it: the rule about the preterite's
+two wrinkles sits with the strong preterite table it is about, and the four
+verbs that change meaning rather than tense are their own chapter instead of a
+sentence tacked onto the end of another. The chapter names are visible along
+the bottom, so the structure of a region can be read without stepping through
+it. A chapter that is one paragraph long is not a mistake; it means the
+argument turned there.
+
+The two halves are also built differently, and deliberately. A codex chapter
 scrolls, because it is a document. A card does not: everything the question
 needs is on screen at once. Asking someone to go looking for the rest of a
 question *during* a retrieval attempt adds load that has nothing to do with the

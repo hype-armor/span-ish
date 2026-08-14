@@ -1,4 +1,4 @@
-import React, { useState } from "../react.js";
+import React, { useState, useRef, useEffect } from "../react.js";
 import { Scroll } from "../components/Scroll.jsx";
 import { entriesFor } from "../codex/entries.jsx";
 
@@ -13,6 +13,16 @@ export function CodexScreen({ region, speak, onExit }) {
   const entries = entriesFor(region.id);
   const [at, setAt] = useState(0);
   const entry = entries[at];
+  const rail = useRef(null);
+
+  /* Keep the chapter you are on in view. With names rather than dots the rail
+     is wider than a phone, so the one that matters can be off the edge. */
+  useEffect(() => {
+    const strip = rail.current;
+    if (!strip) return;
+    const chip = strip.children[at];
+    if (chip && chip.scrollIntoView) chip.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [at]);
 
   if (!entry) return null;
   const Body = entry.Body;
@@ -38,24 +48,32 @@ export function CodexScreen({ region, speak, onExit }) {
       </div>
 
       {entries.length > 1 && (
-        <footer className="screen-foot">
-          <button className="btn ghost" onClick={() => step(-1)} disabled={at === 0}>‹ Back</button>
-          <div className="entry-rail" role="tablist" aria-label="Codex entries">
+        <>
+          {/* Named, not dots. The chapters are the structure of the region, and
+              a row of anonymous marks makes you press Next to find out what it
+              is. */}
+          <nav className="entry-rail" ref={rail} aria-label={`${region.name} chapters`}>
             {entries.map((e, i) => (
               <button
                 key={e.id}
-                className="rail-dot"
+                className="rail-chip"
                 data-on={i === at}
                 onClick={() => setAt(i)}
-                aria-label={e.title}
-                aria-current={i === at}
-              />
+                aria-current={i === at ? "true" : undefined}
+                title={e.title}
+              >
+                {e.short || e.title}
+              </button>
             ))}
-          </div>
-          <button className="btn" onClick={() => step(1)} disabled={at === entries.length - 1}>
-            Next ›
-          </button>
-        </footer>
+          </nav>
+          <footer className="screen-foot">
+            <button className="btn ghost" onClick={() => step(-1)} disabled={at === 0}>‹ Back</button>
+            <span className="entry-of">{at + 1} of {entries.length}</span>
+            <button className="btn" onClick={() => step(1)} disabled={at === entries.length - 1}>
+              Next ›
+            </button>
+          </footer>
+        </>
       )}
     </div>
   );
