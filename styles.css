@@ -561,6 +561,30 @@ body {
   color: var(--faint); margin-top: 9px;
 }
 
+/* The Forge: the English word, the rule between them, and the Spanish word it
+   produces. The endings are what the region teaches, so they are what is
+   coloured — on both sides. */
+.forge { margin-bottom: 10px; }
+.forge-in, .forge-out {
+  font-size: clamp(20px, 5.4vw, 30px); font-weight: 600; letter-spacing: -.02em;
+  line-height: 1.2; min-height: 1.2em;
+}
+.forge-in { color: var(--muted); }
+.forge-in b { color: var(--ink); font-weight: 700; }
+.forge-out { color: var(--ink); }
+.forge-out b { color: var(--accent); font-weight: 700; animation: swap .42s cubic-bezier(.2,.9,.3,1); display: inline-block; }
+.forge-rule {
+  display: inline-flex; align-items: center; gap: 6px; margin: 7px 0;
+  font-size: 12px; font-weight: 700; letter-spacing: .04em;
+  color: var(--accent); background: var(--accent-tint);
+  padding: 3px 10px; border-radius: 999px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.forge-blank {
+  display: inline-block; width: 5.5em; border-bottom: 2.5px dashed var(--line);
+  vertical-align: middle; height: .9em;
+}
+
 /* ---------- results ---------- */
 
 .result {

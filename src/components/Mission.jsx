@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "../react.js";
 import { poolFor } from "../lib/decks.js";
+import { convert } from "../lib/suffix.js";
 import { matches } from "../lib/text.js";
 import { buildRound, bossRound, previewInterval, isDue } from "../lib/srs.js";
 import { MODES, TIMED_MODES, comboMultiplier } from "../lib/game.js";
@@ -20,6 +21,46 @@ const LIMIT = { rapid: 11000, ambush: 7000 };
 const BOSS_HP_PER_CARD = 10;
 const BOSS_HEAL = 7;
 const HEARTS = { boss: 3, sudden: 1 };
+
+/* The Forge shows the rule being applied rather than just asking for a word.
+ *
+ * A suffix card is an English word whose ending decides the Spanish one, and
+ * the whole argument of that region is that the swap is mechanical. Rendering
+ * it as an ordinary typed prompt hides exactly the thing being taught, so the
+ * ending is split off and coloured on both sides of the answer.
+ *
+ * Returns null when the word is not one the converter has a rule for, and the
+ * card falls back to the ordinary layout. */
+function forgeParts(card) {
+  const english = String(card.q || "");
+  const result = convert(english);
+  if (!result || !result.ok) return null;
+
+  /* A rule can cover two endings ("-able / -ible"), and each half carries its
+     own hyphen — stripping only the first one leaves "-ible" unmatchable. */
+  const enTail = result.rule.en
+    .split(" / ")
+    .map((t) => t.replace(/^-/, ""))
+    .find((t) => english.toLowerCase().endsWith(t));
+  if (!enTail) return null;
+
+  const answer = card.canon || (Array.isArray(card.a) ? card.a[0] : card.a);
+  const esTail = String(answer).slice(-result.tail.length);
+  /* Only split the answer where its ending really is the rule's ending —
+     otherwise colour nothing rather than colour the wrong letters. */
+  const split = fold(esTail) === fold(result.tail)
+    ? { stem: String(answer).slice(0, -result.tail.length), tail: esTail }
+    : { stem: String(answer), tail: "" };
+
+  return {
+    enStem: english.slice(0, english.length - enTail.length),
+    enTail,
+    rule: result.rule,
+    ...split,
+  };
+}
+
+const fold = (t) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
 /* Dictation is unanswerable without a voice, and silently playing nothing
    looks like a broken button rather than a missing feature. */
@@ -293,6 +334,7 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
   const nextIn = answered ? previewInterval(history, verdict === "right") : 0;
   const hasBlank = card.q && card.q.indexOf(BLANK) >= 0;
   const ambush = mode === "ambush" && card.kind === "mc" && card.opts.length === 2;
+  const forge = mode === "forge" ? forgeParts(card) : null;
   const multiplier = comboMultiplier(combo);
 
   return (
@@ -358,6 +400,20 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
                     one — every other mission works without it.
                   </p>
                 )}
+              </div>
+            ) : forge ? (
+              <div className="forge">
+                <div className="forge-in mono">
+                  {forge.enStem}<b>{forge.enTail}</b>
+                </div>
+                <div className="forge-rule">
+                  {forge.rule.en} <span aria-hidden="true">→</span> {forge.rule.es}
+                </div>
+                <div className="forge-out mono" aria-hidden={!answered}>
+                  {answered
+                    ? <>{forge.stem}<b key={forge.tail}>{forge.tail}</b></>
+                    : <span className="forge-blank" />}
+                </div>
               </div>
             ) : (
               <div className={"prompt" + (hasBlank ? " mono" : "")}>

@@ -99,7 +99,9 @@ export const MODES = {
     note: "Two forms, both real. Pick fast — left or right.",
   },
   forge: {
-    id: "forge", name: "La Fragua", en: "Forge",
+    /* Not "La Fragua": that is the region's own name, and a mission header
+       reading "La Fragua · LA FRAGUA" says one thing twice. */
+    id: "forge", name: "El Yunque", en: "The Anvil",
     note: "Strike the English word into its Spanish shape.",
   },
   ear: {
