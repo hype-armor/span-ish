@@ -8,7 +8,8 @@ export function Speak({ text, speak, label }) {
   );
 }
 
-/* Every reference table in the app. The wrapper is what scrolls on a phone. */
+/* Every reference table in the app. A table longer than the screen scrolls
+   inside the screen's body — see Scroll.jsx. */
 export function Table({ head, children }) {
   return (
     <div className="tablewrap">
@@ -30,5 +31,18 @@ export function Lede({ children, style }) {
     <p className="lede" style={style}>
       <Glossed>{children}</Glossed>
     </p>
+  );
+}
+
+/* The small stat/reference cards, in a grid that reflows down to one column. */
+export function Cards({ cols = 3, children }) {
+  return <div className={"grid g" + cols}>{children}</div>;
+}
+
+export function Card({ children, className = "", style }) {
+  return (
+    <div className={"card " + className} style={style}>
+      {children}
+    </div>
   );
 }

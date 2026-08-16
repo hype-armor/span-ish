@@ -1,6 +1,7 @@
 import React, { useState } from "../react.js";
 import { blank } from "../lib/srs.js";
 import { mergeProgress } from "../lib/merge.js";
+import { normaliseGame } from "../lib/game.js";
 
 const DEFAULT_EASE = blank().ease;
 
@@ -48,7 +49,9 @@ export function ProgressPanel({ progress, persist }) {
     for (const [band, raw] of Object.entries(parsed.reviews || {})) {
       reviews[band] = { right: Number(raw.right) || 0, wrong: Number(raw.wrong) || 0 };
     }
-    return { scores: parsed.scores || {}, items, reviews };
+    /* The game layer rides along untouched: it is re-derived on the way in by
+       normalise(), and an export written before it existed simply has none. */
+    return { scores: parsed.scores || {}, items, reviews, game: normaliseGame(parsed.game, Date.now()) };
   };
 
   const badPaste = () =>
@@ -80,10 +83,10 @@ export function ProgressPanel({ progress, persist }) {
 
   const reset = () => {
     if (!armed) { setArmed(true); setStatus(null); return; }
-    persist({ scores: {}, items: {}, reviews: {} });
+    persist({ scores: {}, items: {}, reviews: {}, game: null });
     setArmed(false);
     setText("");
-    setStatus({ ok: true, msg: "Cleared. Every item counts as unseen again." });
+    setStatus({ ok: true, msg: "Cleared. Every item counts as unmet again, and the map closes back up." });
   };
 
   return (

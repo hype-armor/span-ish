@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<!-- The app is one fixed frame that never scrolls. `interactive-widget` makes
+     the on-screen keyboard shrink the viewport instead of sliding the page up
+     under it, which is what keeps the answer box visible while you type. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
 <title>Español Mexicano — Shortcuts</title>
 <meta name="description" content="Rule-based shortcuts for Mexican Spanish, with spaced-repetition drills." />
 

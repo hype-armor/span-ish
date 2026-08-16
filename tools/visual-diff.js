@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Visual regression: renders every tab in the working tree and in some other
+/* Visual regression: renders every screen in the working tree and in some other
  * revision, and compares the pixels.
  *
  * Why this exists. app.js is generated from src/ now, so a refactor can change
@@ -83,10 +83,28 @@ function stageRef(ref) {
 }
 
 /* Everything that would otherwise make two renders of the same page differ.
-   Re-seeding per tab matters: it means each tab's cards depend only on its own
-   draws, so a revision that adds content elsewhere does not desynchronise
-   every tab after it. */
-const DETERMINISM = () => {
+   Re-seeding per screen matters: it means each screen's cards depend only on
+   its own draws, so a revision that adds content elsewhere does not
+   desynchronise every screen after it.
+
+   The save is seeded too. Most of the app lives behind progression, so a fresh
+   profile would only ever render the map and one region — the other ten would
+   go uncompared. */
+const SAVE = JSON.stringify({
+  scores: {}, items: {}, reviews: {},
+  game: {
+    xp: 0,
+    today: { key: "2025-12-08", xp: 0, due: 0, answers: 0, missions: 0, flawless: 0, boss: 0, combo: 0, ear: 0, forge: 0, goalMet: false },
+    streak: { count: 0, best: 0, last: null, freezes: 1 },
+    regions: Object.fromEntries(
+      ["rules", "suffix", "sound", "verbs", "past", "periphrasis", "subjunctive", "gender", "mexicanismos", "connectors", "arena"]
+        .map((id) => [id, { stages: Object.fromEntries(["recon", "signature", "sudden", "boss"].map((s) => [s, { cleared: true, best: 1, runs: 1 }])) }]),
+    ),
+    badges: [], intro: true, settings: { motion: "reduced", sound: false, haptics: false },
+  },
+});
+
+const DETERMINISM = (save) => {
   window.__seed = () => {
     let s = 42;
     Math.random = () => { s = (s * 1103515245 + 12345) % 2147483648; return s / 2147483648; };
@@ -94,30 +112,77 @@ const DETERMINISM = () => {
   window.__seed();
   const frozen = 1765200000000;
   Date.now = () => frozen;
+  try { localStorage.setItem("mx-pwa:mx:progress", save); } catch { /* private window */ }
 };
 
 async function capture(browser, port, label) {
   const page = await browser.newPage({ viewport: { width: WIDTH, height: 1100 } });
-  await page.addInitScript(DETERMINISM);
+  await page.addInitScript(DETERMINISM, SAVE);
   /* the webfont is remote; block it so both sides fall back at the same moment */
   await page.route("**://fonts.googleapis.com/**", (r) => r.abort());
   await page.route("**://fonts.gstatic.com/**", (r) => r.abort());
 
   await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded" });
   await page.addStyleTag({ content: "*,*::before,*::after{animation:none!important;transition:none!important}" });
-  await page.waitForSelector("nav .tab", { timeout: 15000 });
+  await page.waitForSelector(".intro-screen", { timeout: 15000 });
   await page.waitForTimeout(700);
 
-  const tabs = await page.$$eval("nav .tab", (els) => els.map((e) => e.textContent.trim()));
   const shots = new Map();
-  for (const tab of tabs) {
+  const shoot = async (name) => {
+    await page.waitForTimeout(320);
+    shots.set(name, await page.screenshot());
+  };
+
+  /* The intro is a real screen and only appears on a first run, so it is
+     captured before it is dismissed or it would never be compared at all. */
+  await shoot("intro");
+  await page.click('.intro-foot button:has-text("Look around")');
+  await page.waitForSelector(".map-screen .node", { timeout: 10000 });
+
+  const home = async (where) => {
+    await page.click(`.dock-btn[aria-label^="${where}"]`);
+    await page.waitForTimeout(240);
+  };
+
+  await shoot("map");
+  await home("Hoy");
+  await shoot("today");
+  await home("Lab");
+  await shoot("lab");
+  await home("Ruta");
+
+  const regions = await page.$$eval(".node-label", (els) => els.map((e) => e.textContent.trim()));
+  for (const region of regions) {
     await page.evaluate(() => window.__seed());
-    await page.click(`nav .tab:has-text("${tab}")`);
-    await page.waitForTimeout(400);
-    shots.set(tab, await page.screenshot({ fullPage: true }));
+    await home("Ruta");
+    await page.click(`.map-cell:has(.node-label:text-is("${region}")) .node`);
+    await page.waitForSelector(".region-screen", { timeout: 10000 });
+    await shoot(`region-${region}`);
+
+    /* every codex entry, since that is where the reference material lives */
+    await page.click(".codex-link");
+    await page.waitForSelector(".codex", { timeout: 10000 });
+    const entries = await page.$$eval(".rail-dot", (els) => els.length);
+    await shoot(`codex-${region}-1`);
+    for (let i = 1; i < entries; i++) {
+      await page.click(`.rail-dot >> nth=${i}`);
+      await shoot(`codex-${region}-${i + 1}`);
+    }
+    await page.click('.icon-btn[aria-label="Back to the region"]');
+    await page.waitForSelector(".region-screen", { timeout: 10000 });
+
+    /* the first card of the first mission: the drill's own layout, which is
+       otherwise never rendered by this harness */
+    await page.evaluate(() => window.__seed());
+    await page.click(".stage-btn:not([disabled])");
+    await page.waitForSelector(".mission", { timeout: 10000 });
+    await shoot(`mission-${region}`);
+    await page.click('.icon-btn[aria-label="Leave this mission"]');
+    await page.waitForSelector(".region-screen", { timeout: 10000 });
   }
+
   await page.close();
-  console.log(`  rendered ${tabs.length} tabs (${label})`);
+  console.log(`  rendered ${shots.size} screens (${label})`);
   return shots;
 }
 
@@ -170,18 +235,31 @@ function comparePng(PNG, a, b) {
      just mean the comparison is not looking at anything. */
   const selfA = await capture(browser, work.port, "self-check pass 1");
   const selfB = await capture(browser, work.port, "self-check pass 2");
-  for (const [tab, image] of selfA) {
-    const result = comparePng(PNG, image, selfB.get(tab));
+  for (const [screen, image] of selfA) {
+    const result = comparePng(PNG, image, selfB.get(screen));
     if (result.differs) {
-      console.error(`\nthe harness is not deterministic: ${tab} differs from itself — ${result.reason}`);
+      console.error(`\nthe harness is not deterministic: ${screen} differs from itself — ${result.reason}`);
       console.error("a comparison against another revision would be meaningless, so stopping here.");
       await browser.close(); work.server.close(); ref.server.close();
       process.exit(2);
     }
   }
-  console.log("  self-check: every tab matches itself\n");
+  console.log("  self-check: every screen matches itself\n");
 
-  const theirs = await capture(browser, ref.port, REF);
+  /* The other revision is rendered by the same code path, which only works
+     while both sides still have the same screens. A refactor big enough to
+     rename them is a real answer to "did the pixels change" — just not one
+     this harness can express — so say so plainly instead of dying on a
+     selector timeout. */
+  let theirs;
+  try {
+    theirs = await capture(browser, ref.port, REF);
+  } catch (err) {
+    console.error(`\n${REF} does not render the screens this revision has (${String(err.message || err).split("\n")[0]}).`);
+    console.error("There is nothing to compare pixel for pixel across a change that large.");
+    await browser.close(); work.server.close(); ref.server.close();
+    process.exit(0);
+  }
   await browser.close();
   work.server.close();
   ref.server.close();
@@ -191,22 +269,22 @@ function comparePng(PNG, a, b) {
   const shared = [...selfA.keys()].filter((t) => theirs.has(t));
 
   const differing = [];
-  for (const tab of shared) {
-    const result = comparePng(PNG, theirs.get(tab), selfA.get(tab));
+  for (const screen of shared) {
+    const result = comparePng(PNG, theirs.get(screen), selfA.get(screen));
     if (!result.differs) continue;
-    differing.push({ tab, reason: result.reason });
+    differing.push({ screen, reason: result.reason });
     fs.mkdirSync(OUT, { recursive: true });
-    fs.writeFileSync(path.join(OUT, `${tab}-before.png`), theirs.get(tab));
-    fs.writeFileSync(path.join(OUT, `${tab}-after.png`), selfA.get(tab));
+    fs.writeFileSync(path.join(OUT, `${screen}-before.png`), theirs.get(screen));
+    fs.writeFileSync(path.join(OUT, `${screen}-after.png`), selfA.get(screen));
   }
 
-  console.log(`identical: ${shared.length - differing.length}/${shared.length} shared tabs`);
+  console.log(`identical: ${shared.length - differing.length}/${shared.length} shared screens`);
   if (onlyHere.length) console.log(`added here: ${onlyHere.join(", ")}`);
   if (onlyThere.length) console.log(`only in ${REF}: ${onlyThere.join(", ")}`);
 
   if (differing.length) {
     console.log("\nchanged:");
-    for (const d of differing) console.log(`  ${d.tab} — ${d.reason}`);
+    for (const d of differing) console.log(`  ${d.screen} — ${d.reason}`);
     console.log(`\nbefore/after written to ${OUT}`);
     console.log("If the change was intended, this is the expected result; if not, it is a regression.");
     process.exit(1);

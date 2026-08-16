@@ -32,10 +32,11 @@ The testing effect is the best-replicated finding in this literature: being
 asked to produce an answer beats re-studying the same material, and the gap
 widens as the delay grows (Roediger & Karpicke, 2006).
 
-**In the app:** every card is a retrieval event. The reference tables above
-each drill exist to be read once; nothing in the scheduler ever re-presents
-material for study. `src/components/Drill.jsx` has no "show me this again"
-path — only answer, feedback, advance.
+**In the app:** every card is a retrieval event. The codex exists to be read
+once; nothing in the scheduler ever re-presents material for study.
+`src/components/Mission.jsx` has no "show me this again" path — only answer,
+feedback, advance. That holds in every mission mode: a timer running out is a
+failed attempt, and a failed attempt still gets its answer and its reason.
 
 **Do not** add a card format that shows the answer before asking for it.
 
@@ -52,12 +53,12 @@ content.
 
 Because the right intervals cannot be read off the literature, the app also
 records how each one performs: `tallyReview` files every answer into a band by
-the interval that preceded it, and the Review tab reports success rate per band.
+the interval that preceded it, and the Lab reports success rate per band.
 Bands rather than a log of every review — bounded, aggregatable, and it survives
 export and merge. Merging takes the larger side per band rather than the sum, so
 that merging the same export twice stays a no-op.
 
-### 3. The Review deck interleaves, and distractors are always real
+### 3. The Arena interleaves, and distractors are always real
 
 Interleaved practice beats blocked practice (Rohrer & Taylor, 2007). The
 mechanism matters for how we build cards: Birnbaum, Kornell, E. Bjork & R. Bjork
@@ -65,7 +66,7 @@ mechanism matters for how we build cards: Birnbaum, Kornell, E. Bjork & R. Bjork
 alone did not**, because interleaving is what puts confusable categories next
 to each other. The benefit comes from discrimination, not from variety.
 
-**In the app:** the Review deck mixes all ten modules, and every wrong answer is
+**In the app:** the Arena mixes all ten modules, and every wrong answer is
 a genuine competing form — `viene`/`venga`, `visité`/`visitaba`,
 `tuviera`/`tendría`, `el`/`la`. The `conf` field in `content/tenses.js` and
 `content/connectors.js` lets an author name the specific confusion a card should
@@ -118,9 +119,125 @@ shows the completed sentence.
 
 ### 7. Rules first, then application
 
-The Rules deck drills the rules themselves; every other tab drills applying
+Los Cimientos drills the rules themselves; every other region drills applying
 them. This split exists because the app previously asked learners to recall a
-rule and apply it in a single step, which loads two things at once.
+rule and apply it in a single step, which loads two things at once. It is also
+why it is the region the map opens with: everything downstream is cheaper once
+the rule itself is free.
+
+### 8. Reading and answering are different activities, and live apart
+
+The reference material used to sit above each drill, which meant it was always
+in the way and never actually studied. It is now a codex you open on purpose.
+Nothing was dropped in the move — every table, every paragraph — but nothing is
+passively scrolled past on the way to a card either.
+
+A region's codex is several chapters rather than one page, and the chapters
+break where the argument breaks — not where the screen runs out. A chapter is
+one idea with a title that covers all of it: the rule about the preterite's
+two wrinkles sits with the strong preterite table it is about, and the four
+verbs that change meaning rather than tense are their own chapter instead of a
+sentence tacked onto the end of another. The chapter names are visible along
+the bottom, so the structure of a region can be read without stepping through
+it. A chapter that is one paragraph long is not a mistake; it means the
+argument turned there.
+
+The two halves are also built differently, and deliberately. A codex chapter
+scrolls, because it is a document. A card does not: everything the question
+needs is on screen at once. Asking someone to go looking for the rest of a
+question *during* a retrieval attempt adds load that has nothing to do with the
+material, and the retrieval is the part with the evidence behind it.
+
+---
+
+## The game layer
+
+Added after the principles above, and constrained by them. The app is now a
+map of eleven regions with missions, XP, a streak, levels, quests and badges —
+"extreme gamification" was the brief — so this section exists to say what each
+mechanic is attached to and why it cannot drift.
+
+The evidence is genuinely mixed and the design follows the caveats more closely
+than the headline. Meta-analyses find gamification helps: Zeng et al. (2024)
+report a moderate effect on academic performance, and Kim & Castelli (2021)
+find small-to-moderate effects that differ by outcome type. But the same
+literature reports high heterogeneity, novelty effects, and heavy dependence on
+design — the effect belongs to particular mechanics, not to "gamification".
+Against that, Deci, Koestner & Ryan (1999) is the reason to be careful: tangible
+rewards contingent on doing a task reliably undermine intrinsic motivation for
+it. A reward layer bolted onto something a learner already wants to do can make
+them want it less.
+
+### The rule everything follows
+
+**Every reward is a readout of the review schedule, not a currency of its own.**
+There is no number in the app that can be moved by doing something other than
+the work the scheduler asked for. Concretely:
+
+| Mechanic | What it is actually measuring |
+| --- | --- |
+| XP | Retrievals of items that were **due** (or never met). Reviewing early pays `XP_EARLY`, a fifth of the rate. |
+| Cram detector | A run under 25% scheduled material pays a quarter, and the results screen says why. |
+| Combo | Consecutive correct answers *within* a mission. Never persisted. |
+| Daily goal | Scheduled items answered right — not minutes, not cards seen, not sessions opened. |
+| Streak | Days the goal was met. |
+| Level | `masteryPoints`: every item weighted by its interval band. Only lengthening intervals move it. |
+| Region fill | The share of that region's items at `solid` or better. |
+| Boss | Drawn from your own highest-lapse, lowest-ease items. |
+
+The point of the table is that none of these rows can be gamed by grinding easy
+material, because none of them counts easy material. `tools/test-lib.js` asserts
+this directly — "replaying easy material earns a fraction of doing the work",
+"answering the same three cards forever cannot raise the level".
+
+### The streak, specifically
+
+Streaks are the mechanic with the clearest retention evidence and the clearest
+failure mode. The reported behaviour is that learners protect the streak by
+speed-running whatever is cheapest, which triggers the retention machinery
+without the learning. The counter here is that **the streak cannot be claimed
+by opening the app**: it advances only when the day's goal of scheduled items
+is cleared. Doing the easy thing does not defend it.
+
+The other adjustment is a banked grace day, refilled every seventh day, so one
+missed day costs a resource rather than the streak. A streak that shatters on
+the first bad day stops being worth protecting, and the loss-aversion pull that
+makes it work at all depends on it being worth protecting.
+
+### Difficulty, and where the pressure is allowed
+
+Region unlocks are deliberately a low bar — two cleared missions, not mastery —
+because the aim is to stay just past current skill (the "zones of proximal
+flow" framing: challenge tuned to skill, with the scheduler dragging older
+material forward into everything downstream anyway). Gating on mastery would be
+truer to the material and would leave a learner staring at one region for a
+fortnight.
+
+Within a region the four missions escalate, and **a clock only ever runs on
+cards you answer by choosing** (`TIMED_MODES`). Putting a timer on a typed
+retrieval trades the retrieval — the thing with the evidence behind it — for
+drama. Recon, the first mission in every region, has no clock and no penalty at
+all, because meeting new material under pressure is a bad trade.
+
+### Deliberately not built
+
+- **Leaderboards.** No server, and single-player besides — but also the element
+  most implicated in demotivating learners who are not near the top.
+- **Purchasable streak repair, lives, or any resource bought with XP.** Every
+  one of them makes the reward a currency, which is the thing the design is
+  organised to avoid.
+- **Rewards for time spent or sessions opened.** Both are measures of
+  attendance.
+- **Any card format that shows the answer before asking for it**, however good
+  it would look. See principle 1.
+
+### The part that is a judgement call
+
+Whether any of this helps is not something the app can tell you, and the
+novelty effect means the first few weeks would flatter it even if it did not.
+The Lab is the counterweight: it reports success rate per interval band in
+plain numbers, with no game layer on top, and that is the thing to read if the
+question is whether the app is working.
 
 ---
 
@@ -169,9 +286,10 @@ sense of knowing. The value of a miss is taken at the moment of feedback
 (Kornell, Hays & Bjork, 2009), and a miss already sets `due = now`, so the card
 returns in the next session regardless — the repeat was close to redundant.
 
-**Status:** removed. A round now ends with a miss unresolved, which feels worse
-and is meant to. If it makes sessions demoralising in practice, the answer is not
-to restore the retry but to look at round size.
+**Status:** removed. A mission now ends with a miss unresolved, which feels
+worse and is meant to. Mission size is the lever that was moved instead: a run
+is 6–14 cards rather than 10–14, so a bad one is over sooner and the next one
+starts from zero.
 
 ### Half the cards are recognition
 
@@ -203,7 +321,7 @@ it.
 ### Listening is thin, but no longer word-only
 
 8% of cards. `content/sound.js` holds 16 single words; `content/listening.js`
-adds 14 sentences, each chosen to carry a feature the Sound tab teaches — silent
+adds 14 sentences, each chosen to carry a feature El Oído teaches — silent
 h, the j rasp, ll, ñ, trilled rr, x — inside ordinary speech rather than a
 demonstration.
 
@@ -226,7 +344,7 @@ mistaken for coverage.
 
 ## Open questions
 
-The first of these is now measured rather than guessed at. **Review → How the
+The first of these is now measured rather than guessed at. **Lab → How the
 schedule is doing** files every answer under the interval that preceded it, so
 success rate can be read against gap length instead of against impressions.
 Read a row only once it has twenty or so answers behind it (`MIN_REVIEWS_TO_READ`).
@@ -244,8 +362,14 @@ back.
 2. **Is 40% new material per round right?** (`buildRound` in `src/lib/srs.js`.)
    Too high and the backlog never clears; too low and new content stalls.
 3. **Did removing the retry hurt motivation?** The evidence says the repeat was
-   not teaching much. Whether rounds now end too bleakly is a question only use
-   can answer.
+   not teaching much. Whether missions now end too bleakly is a question only
+   use can answer — and one the game layer was partly built to answer, since a
+   run that ends badly still pays out mastery and still moves the day's goal.
+6. **Is the game layer helping or just present?** The honest answer is that we
+   cannot tell from inside the app. What *can* be watched is whether the
+   interval bands get worse after it landed: if success rates fall while
+   sessions get more frequent, the mechanics are buying attendance at the cost
+   of attention, which is the failure mode the design is most exposed to.
 4. **Are the loose-grading rules too forgiving?** Accents are forgiven outside
    dictation. That is a deliberate trade of orthographic precision for flow.
 5. **Which cards are badly written?** The same panel lists items missed three
@@ -278,6 +402,18 @@ back.
 - Birnbaum, M. S., Kornell, N., Bjork, E. L., & Bjork, R. A. (2013). Why
   interleaving enhances inductive learning: The roles of discrimination and
   retrieval. *Memory & Cognition*, 41, 392–402.
+- Deci, E. L., Koestner, R., & Ryan, R. M. (1999). A meta-analytic review of
+  experiments examining the effects of extrinsic rewards on intrinsic
+  motivation. *Psychological Bulletin*, 125, 627–668.
+- Kim, J., & Castelli, D. M. (2021). Effects of gamification on behavioral
+  change in education: A meta-analysis. *International Journal of Environmental
+  Research and Public Health*, 18, 3550.
+- Nicholson, S. (2015). A RECIPE for meaningful gamification. In *Gamification
+  in Education and Business*, 1–20.
+- Zeng, J., Sun, D., Looi, C.-K., & Fan, A. C. W. (2024). Exploring the impact
+  of gamification on students' academic performance: A comprehensive
+  meta-analysis of studies from 2008 to 2023. *British Journal of Educational
+  Technology*, 55, 2478–2502.
 - Cepeda, N. J., Pashler, H., Vul, E., Wixted, J. T., & Rohrer, D. (2006).
   Distributed practice in verbal recall tasks: A review and quantitative
   synthesis. *Psychological Bulletin*, 132, 354–380.

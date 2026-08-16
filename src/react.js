@@ -7,6 +7,8 @@ export default React;
 
 export const useState = ns.react.useState;
 export const useEffect = ns.react.useEffect;
+export const useLayoutEffect = ns.react.useLayoutEffect;
+export const useReducer = ns.react.useReducer;
 export const useRef = ns.react.useRef;
 export const useMemo = ns.react.useMemo;
 export const useCallback = ns.react.useCallback;

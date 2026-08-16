@@ -385,6 +385,28 @@ export function cardsFor(mod) {
   return build ? build() : [];
 }
 
-/* Every id in the app, for the Review tab's counters. */
+/* Every id in the app, for the Arena's counters. */
 export const ALL_IDS = cardsFor("mixed").map((c) => c.id);
 export const ALL_ID_SET = new Set(ALL_IDS);
+
+/* The ids belonging to one module, so a region can report its own mastery.
+   Built once: the ids are stable even though the options and example
+   sentences inside a card are redrawn every round. */
+const IDS_BY_MOD = new Map(MODULES.map((mod) => [mod, cardsFor(mod).map((c) => c.id)]));
+export const idsForMod = (mod) => (mod === "mixed" ? ALL_IDS : IDS_BY_MOD.get(mod) || []);
+
+/* Which cards a mission mode is allowed to draw from.
+ *
+ * A mode narrows the deck rather than adding cards: Ambush wants the two-way
+ * discriminations, By Ear wants the dictation. A mode that cannot fill a round
+ * from its own slice falls back to the whole deck — a four-card mission would
+ * be a worse outcome than a mode that is only mostly what it says. */
+export function poolFor(mod, mode) {
+  const all = cardsFor(mod);
+  const narrowed =
+    mode === "ambush" ? all.filter((c) => c.kind === "mc" && c.opts && c.opts.length === 2)
+    : mode === "ear" ? all.filter((c) => c.listen)
+    : mode === "forge" ? all.filter((c) => c.kind === "type")
+    : all;
+  return narrowed.length >= 8 ? narrowed : all;
+}

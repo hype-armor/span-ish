@@ -3,6 +3,7 @@
  * Anything on disk was written by an older version of this app, so every
  * field is re-derived rather than trusted. */
 import { blank } from "./srs.js";
+import { normaliseGame } from "./game.js";
 
 const DEFAULT_EASE = blank().ease;
 
@@ -38,5 +39,9 @@ export function normalise(saved) {
   for (const [band, raw] of Object.entries(shaped.reviews || {})) {
     reviews[band] = { right: Number(raw.right) || 0, wrong: Number(raw.wrong) || 0 };
   }
-  return { scores: shaped.scores || {}, items, reviews };
+  /* The game layer arrived last of all, so every save that predates it — and
+     every export taken from one — simply starts it from scratch. Review
+     history is the part that cannot be regenerated; levels and streaks are
+     read back off that history anyway. */
+  return { scores: shaped.scores || {}, items, reviews, game: normaliseGame(shaped.game, Date.now()) };
 }

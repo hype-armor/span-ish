@@ -105,6 +105,42 @@ export function buildRound(cards, size, items, now) {
   return round;
 }
 
+/* A boss is built out of the items that have actually been beating you:
+ * most lapses first, then lowest ease, then whatever is most overdue. Unseen
+ * material is excluded — a boss made of cards you have never met is not a
+ * reckoning with anything, it is just a long round.
+ *
+ * Falls back to a normal round when there is not enough history yet, which is
+ * what makes the first boss in a region playable at all. */
+export function bossRound(cards, size, items, now) {
+  const known = cards.filter((c) => items[c.id]);
+  const scored = known
+    .map((card) => {
+      const item = items[card.id];
+      const late = Math.max(0, (now - dueAt(item)) / DAY);
+      return { card, hurt: (item.lapses || 0) * 10 + (EASE_START - item.ease) * 6 + Math.min(late, 10) };
+    })
+    .sort((a, b) => b.hurt - a.hurt);
+
+  const chosen = scored.slice(0, size).map((s) => s.card);
+  if (chosen.length >= size) return sample(chosen, size); // shuffled, so order is not a tell
+
+  /* Not enough met material to fill it — top up the ordinary way. */
+  const taken = new Set(chosen.map((c) => c.id));
+  const rest = buildRound(cards.filter((c) => !taken.has(c.id)), size - chosen.length, items, now);
+  return sample([...chosen, ...rest], size);
+}
+
+/* How many of these ids are asking to be answered right now. Counts met
+   material only, the same as `summarise` — everything unseen is technically
+   due at zero, and reporting that as a backlog would make a fresh region look
+   like sixty items of debt. */
+export function dueCount(items, ids, now) {
+  let due = 0;
+  for (const id of ids) if (items[id] && isDue(items[id], now)) due++;
+  return due;
+}
+
 /* ---------- measuring whether the schedule is working ---------- */
 
 /* Reviews are tallied into bands by the interval that preceded them, so the

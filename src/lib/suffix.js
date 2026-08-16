@@ -40,5 +40,10 @@ export function convert(input) {
   if (/ible$/i.test(word)) tail = "ible";
   if (rule.en === "-ly") [stem, tail] = menteTail(stem);
 
-  return { ok: true, raw: word, stem, tail, rule };
+  /* `matched` is the ending the *regex* found, which is not always the ending
+     the rule is named after: -ize also matches analy|ze. Anything that needs
+     to split the English word — the Anvil, in Mission.jsx — has to use this
+     rather than the rule's name, or it will fail to find the ending it is
+     looking at. */
+  return { ok: true, raw: word, matched: matched[0], stem, tail, rule };
 }

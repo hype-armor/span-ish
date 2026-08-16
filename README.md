@@ -9,13 +9,63 @@ An installable, offline-capable build of the Mexican Spanish drill app.
 | `index.html` | The shell: metadata, the splash, and the script tags. Nothing else. |
 | `content/` | The card decks and every word the app teaches, one readable module per topic. **Edit these.** |
 | `styles.css` | Every style in the app. |
-| `src/` | The app's source: the drill engine, the scheduler, and the sections. |
+| `src/` | The app's source: the mission engine, the scheduler, the game layer, and the screens. |
 | `app.js` | Built from `src/`. Committed so the site stays static — don't edit it by hand. |
 | `vendor/react.js` | React 18.3.1 and ReactDOM, vendored rather than loaded from a CDN. |
 | `manifest.webmanifest` | Name, icons, colours, and standalone display mode. |
 | `sw.js` | Service worker. Caches the shell so the app opens with no network. Its `CACHE` name is generated — see Republishing. |
 | `icons/` | 192 / 512 / maskable / Apple touch icons, plus an SVG favicon. |
 | `docs/learning-design.md` | Why the app drills the way it does, and the research behind it. Read before changing drill mechanics. |
+
+Inside `src/`:
+
+| Directory | Purpose |
+| --- | --- |
+| `src/lib/` | The parts with rules in them and no DOM: the scheduler (`srs.js`), the game layer (`game.js`), the decks (`decks.js`), grading (`text.js`), merging two devices (`merge.js`). `tools/test-lib.js` drives these directly. |
+| `src/screens/` | One file per place you can be: the intro, the map, a region, its codex, today, the lab. |
+| `src/components/` | The pieces screens are built from — the mission engine, the pager, the heads-up strip, the dock, the glossary. |
+| `src/codex/` | The reference material, one screen per entry. Prose and tables only; it reads the decks and teaches nothing the drills do not. |
+
+### How it is put together
+
+There are no tabs. The app is one fixed frame — a heads-up strip, a stage, and
+a dock — and everything happens inside it:
+
+- A **first run** opens on one screen that says what the app is and how it
+  works, then never shows it again. The old masthead said that on every screen
+  forever; a map of glyphs says nothing at all.
+- **La Ruta** is the map: eleven regions on a serpentine path, one per topic,
+  each opening when the one before it has had two missions cleared.
+- A **region** holds its codex (that topic's rules, tables and examples) and
+  four missions that escalate: Recon, the region's signature mode, sudden
+  death, and a boss built out of the items you personally keep missing.
+- **Hoy** is the day: the goal, the streak, three quests, and the shape of what
+  you know. **El Laboratorio** is the same schedule diagnostics as before, plus
+  export and import.
+
+Two rules about size, and they are different rules:
+
+- **The frame never moves.** The page itself has no scrollbar at any size, so
+  the strip and the dock cannot be scrolled away from.
+- **A card being answered fits; a reference screen scrolls.** Everything a
+  question needs is on screen at once, because hunting for the rest of it
+  mid-retrieval is a bad thing to ask. A codex entry is a document and behaves
+  like one (`src/components/Scroll.jsx`).
+
+`npm run smoke` checks all three. The fit rule is the fragile one — a long
+explanation or a shorter phone breaks it silently — so it is asked properly:
+twenty-five real cards, in the regions with the longest ones, at 360×640, both
+before and after answering.
+
+An earlier version of this app paged instead of scrolling, everywhere. Paging
+suits a thing you step through and not a thing you read, and most of the
+reference material is read.
+
+The game layer is documented in [`docs/learning-design.md`](docs/learning-design.md)
+under *The game layer*, including which mechanics were deliberately not built.
+Read it before adding one: the constraint the whole design runs on is that
+every reward is a readout of the review schedule rather than a currency of its
+own.
 
 Nothing is built at deploy time and nothing loads from a CDN: `app.js` is
 committed, so the site is served exactly as it sits in the repo. The content
@@ -47,8 +97,9 @@ npm run visual                        # against HEAD
 node tools/visual-diff.js --against main
 ```
 
-Renders every tab in the working tree and in another revision and compares the
-pixels. There are no baseline images in the repo — the other side is
+Renders every screen in the working tree and in another revision and compares
+the pixels. Progression is seeded so that the regions behind it are rendered
+too — on a fresh save ten of the eleven would be locked and never compared. There are no baseline images in the repo — the other side is
 materialised from git on demand, so there is nothing to keep up to date.
 
 It exists because `app.js` is generated now, so a refactor can change what the
@@ -90,7 +141,7 @@ Two rules:
   those retires the old card and introduces a new one. Fixing a typo in a `why`
   or a translation is free; changing the answer resets that card's history.
 
-New cards appear in their own tab and in the interleaved Review deck
+New cards appear in their own region and in the interleaved Arena deck
 automatically. After editing, run `npm run build` — see Republishing.
 
 `content/glossary.js` is not a deck at all. It defines the grammar words —
@@ -102,7 +153,7 @@ and a term that appears nowhere in the app, since that one could never be clicke
 
 Not every deck is drilled. `converterExamples` and `genderExceptionTable` are
 display only — the chips under the Transformer's live converter and the
-exceptions table on the Gender tab. A word in `converterExamples` has to end in
+exceptions table in El o La's codex. A word in `converterExamples` has to end in
 one of the suffixes in the same file, or the converter will say no rule matches
 it.
 
@@ -141,11 +192,11 @@ once; after that it is hands-off.
 
 Review scheduling is kept in `localStorage` under the `mx-pwa:` prefix, on that
 device and in that browser. Installing to the home screen does *not* copy an
-existing browser profile's data, so export first from **Review → Copy progress**
+existing browser profile's data, so export first from **Lab → Copy progress**
 and paste it into the installed app if you want to carry history across.
 
 Using the app on more than one device gives you two histories that drift apart.
-**Review → Paste to restore** offers two ways to reconcile them:
+**Lab → Paste to restore** offers two ways to reconcile them:
 
 - **Merge into this device** folds the pasted history in. For an item both sides
   know, the more recent review wins — it is the freshest evidence about that
