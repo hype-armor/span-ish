@@ -33,26 +33,31 @@ window.MX.ruleGenderExceptions = [
 window.MX.ruleVerbForms = [
   {
     q: "Regular -ar verb, present",
+    k: "present:ar",
     a: "-o, -as, -a, -amos, -an",
     why: "hablo, hablas, habla, hablamos, hablan."
   },
   {
     q: "Regular -er verb, present",
+    k: "present:er",
     a: "-o, -es, -e, -emos, -en",
     why: "como, comes, come, comemos, comen."
   },
   {
     q: "Regular -ir verb, present",
+    k: "present:ir",
     a: "-o, -es, -e, -imos, -en",
     why: "vivo, vives, vive, vivimos, viven. Only nosotros tells -er and -ir apart."
   },
   {
     q: "Regular -ar verb, preterite",
+    k: "preterite:ar",
     a: "-é, -aste, -ó, -amos, -aron",
     why: "hablé, hablaste, habló, hablamos, hablaron. Nosotros is spelled exactly like the present — context does the work."
   },
   {
     q: "Regular -er / -ir verb, preterite",
+    k: "preterite:er-ir",
     a: "-í, -iste, -ió, -imos, -ieron",
     why: "comí, comiste, comió, comimos, comieron. One set covers both endings."
   }
@@ -109,6 +114,7 @@ window.MX.ruleSubjunctive = [
   },
   {
     q: "-ar verbs in the present subjunctive",
+    k: "subjunctive:ar",
     sub: "Which vowel do the endings use?",
     a: "e",
     opts: ["a", "e", "i", "o"],
@@ -116,6 +122,7 @@ window.MX.ruleSubjunctive = [
   },
   {
     q: "-er and -ir verbs in the present subjunctive",
+    k: "subjunctive:er-ir",
     sub: "Which vowel do the endings use?",
     a: "a",
     opts: ["a", "e", "i", "o"],

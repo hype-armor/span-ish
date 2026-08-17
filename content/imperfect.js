@@ -14,12 +14,12 @@ window.MX = window.MX || {};
 
 window.MX.imperfectEndings = [
   {
-    kind: "-ar verbs", e: "-aba, -abas, -aba, -ábamos, -aban",
+    kind: "-ar verbs", k: "imperfect:ar", e: "-aba, -abas, -aba, -ábamos, -aban",
     ex: "hablaba, hablabas, hablaba, hablábamos, hablaban",
     n: "The nosotros form is the only one with a written accent.",
   },
   {
-    kind: "-er and -ir verbs", e: "-ía, -ías, -ía, -íamos, -ían",
+    kind: "-er and -ir verbs", k: "imperfect:er-ir", e: "-ía, -ías, -ía, -íamos, -ían",
     ex: "comía, comías, comía, comíamos, comían",
     n: "One set for both, and every form carries its accent.",
   },

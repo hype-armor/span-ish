@@ -264,6 +264,123 @@ requireFields("verbSentences", ["v", "p", "a", "sents"]);
 requireUnique("verbSentences", "the verb and answer", (r) => r.v + ":" + r.a);
 requireBlank("verbSentences", (r) => r.sents);
 
+/* The ending tables src/lib/conjugate.js reads.
+ *
+ * These rows are prose for a learner and data for the generator at the same
+ * time, which is the point — one table, so the two cannot drift. That only
+ * holds if the shape holds: five cells in the repo's person order, each an
+ * ending rather than a whole word, and a key the generator can find the row
+ * by. Until now the five-form invariant was checked on two of the six tables
+ * that carry five-form strings. */
+{
+  const fiveCells = (name, label, text) => {
+    const cells = String(text).split(",").map((c) => c.trim());
+    if (cells.length !== 5) {
+      fail(name, `${label} lists ${cells.length} cells; the repo's person order is five (yo, tú, él/ella, nosotros, ellos)`);
+      return null;
+    }
+    return cells;
+  };
+
+  const keyed = (name, rows, field, expected) => {
+    const seen = [];
+    (rows || []).forEach((r, i) => {
+      if (!r.k) return;
+      if (seen.includes(r.k)) fail(name, `two rows share the key "${r.k}"`);
+      seen.push(r.k);
+      const cells = fiveCells(name, `"${r.k}"`, r[field]);
+      if (cells) {
+        for (const cell of cells) {
+          if (!cell.startsWith("-")) fail(name, `"${r.k}" cell "${cell}" is not an ending; the generator appends these to a stem`);
+        }
+      }
+    });
+    const missing = expected.filter((k) => !seen.includes(k));
+    if (missing.length) fail(name, `no row is keyed ${missing.join(", ")} — src/lib/conjugate.js looks rows up by key`);
+  };
+
+  keyed("ruleVerbForms", MX.ruleVerbForms, "a",
+    ["present:ar", "present:er", "present:ir", "preterite:ar", "preterite:er-ir"]);
+  keyed("imperfectEndings", MX.imperfectEndings, "e", ["imperfect:ar", "imperfect:er-ir"]);
+
+  /* The present subjunctive stores its vowel rather than its endings, so it is
+     checked differently: one letter, and the two rows must not agree. */
+  const vowels = (MX.ruleSubjunctive || []).filter((r) => r.k);
+  for (const row of vowels) {
+    if (!/^[aeiou]$/.test(String(row.a).trim())) {
+      fail("ruleSubjunctive", `"${row.k}" has vowel "${row.a}"; the generator builds its endings out of a single letter`);
+    }
+  }
+  if (vowels.length !== 2) fail("ruleSubjunctive", `${vowels.length} rows carry a key; conjugate.js needs subjunctive:ar and subjunctive:er-ir`);
+  else if (String(vowels[0].a).trim() === String(vowels[1].a).trim()) {
+    fail("ruleSubjunctive", "both keyed rows flip to the same vowel, which cannot be right");
+  }
+
+  /* irregularVerbs was never count-checked either. */
+  (MX.irregularVerbs || []).forEach((r) => fiveCells("irregularVerbs", `"${r.v}"`, r.f));
+}
+
+/* The regular verbs the generator is allowed to build.
+ *
+ * Two things have to hold, and only one of them is mechanical. The endings
+ * below force a spelling or stem change somewhere in the four tenses, so a
+ * verb carrying one cannot be built by appending an ending to a stem. The
+ * other thing — that a verb is not a boot verb — no check can see: contar and
+ * caminar are the same shape. That part is judgement, and the reason the list
+ * is short and ordinary. */
+{
+  const FORCED_CHANGE = [
+    [/car$/, "yo preterite is -qué, not -cé (busqué)"],
+    [/gar$/, "yo preterite is -gué (llegué)"],
+    [/zar$/, "yo preterite is -cé (empecé)"],
+    [/[gG]er$/, "yo present is -jo (protejo)"],
+    [/gir$/, "yo present is -jo (dirijo)"],
+    [/guir$/, "the u drops in yo (sigo)"],
+    [/uir$/, "a y appears (construyo)"],
+    [/[aeo]er$/, "the i turns to y (leyó)"],
+    [/aer$/, "the i turns to y (cayó)"],
+    [/ñer$|ñir$/, "the i is swallowed (gruñó)"],
+    [/iar$|uar$/, "whether the i or u takes an accent cannot be read off the infinitive — envío but limpio"],
+  ];
+
+  const rows = MX.regularVerbs;
+  if (!Array.isArray(rows) || !rows.length) fail("regularVerbs", "missing, or not an array");
+  else {
+    requireFields("regularVerbs", ["v", "en"]);
+    requireUnique("regularVerbs", "the infinitive", (r) => r.v);
+
+    const irregular = new Set([
+      ...(MX.irregularVerbs || []).map((r) => r.v),
+      ...(MX.preteriteStems || []).flatMap((r) => String(r.v).split("/").map((x) => x.trim())),
+      ...(MX.imperfectIrregular || []).map((r) => r.v),
+      ...(MX.ruleSubjunctiveForms || []).map((r) => r.v),
+    ]);
+
+    /* A verb the app already uses is not new material, which is the whole
+       point of these. Checked against every deck's own text. */
+    const spoken = fs.readdirSync(CONTENT)
+      .filter((f) => f !== "verbs.js")
+      .map((f) => fs.readFileSync(path.join(CONTENT, f), "utf8"))
+      .join("\n")
+      .toLowerCase();
+
+    rows.forEach((r) => {
+      const v = String(r.v).toLowerCase();
+      if (!/(ar|er|ir)$/.test(v)) {
+        fail("regularVerbs", `"${v}" does not end in -ar, -er or -ir`);
+        return;
+      }
+      for (const [pattern, why] of FORCED_CHANGE) {
+        if (pattern.test(v)) { fail("regularVerbs", `"${v}" is not regular throughout: ${why}`); return; }
+      }
+      if (irregular.has(v)) fail("regularVerbs", `"${v}" is listed as irregular elsewhere in content/`);
+      if (new RegExp(`\\b${v}\\b`).test(spoken)) {
+        fail("regularVerbs", `"${v}" already appears in another deck, so it is not a verb the learner has never met`);
+      }
+    });
+  }
+}
+
 requireFields("preteriteStems", ["v", "stem", "f", "n"]);
 requireUnique("preteriteStems", "the verb", (r) => r.v);
 (MX.preteriteStems || []).forEach((r, i) => {

@@ -184,6 +184,108 @@ const srs = load("src/lib/srs.js");
   check("a short deck yields what it has", small.length, 4);
 }
 
+/* ---------- conjugating a regular verb ---------- */
+
+/* Two independent layers, because the failure this guards against is a learner
+   being shown Spanish that is simply wrong.
+ *
+ * The first costs nothing to maintain: content/ already writes out eleven
+ * complete regular paradigms, between them covering every ending row for all
+ * four tenses. The generator has to reproduce them exactly — which also means
+ * the table the Rules region teaches and the table the generator applies can
+ * never quietly disagree.
+ *
+ * The second is a golden table of its own, for verbs content/ says nothing
+ * about. */
+{
+  const conj = load("src/lib/conjugate.js");
+  const golden = require(path.join(ROOT, "tools/golden-verbs.js"));
+  const MX = global.MX;
+
+  /* Pull a five-form paradigm out of a prose string. The forms always come
+     first and the commentary always follows a full stop or an em dash, so cut
+     there — and insist on exactly five, so a reworded sentence fails loudly
+     instead of silently comparing against a fragment. */
+  const formsIn = (text, where) => {
+    const head = String(text).split(/[.—]/)[0];
+    const forms = head.split(",").map((f) => f.trim()).filter(Boolean);
+    if (forms.length !== 5) fail(`${where}: parsed ${forms.length} forms out of "${head.trim()}", expected 5`);
+    return forms;
+  };
+
+  const keyed = (rows, k) => rows.find((r) => r.k === k);
+
+  const WORKED = [
+    ["hablar", "present", formsIn(keyed(MX.ruleVerbForms, "present:ar").why, "ruleVerbForms present:ar")],
+    ["comer", "present", formsIn(keyed(MX.ruleVerbForms, "present:er").why, "ruleVerbForms present:er")],
+    ["vivir", "present", formsIn(keyed(MX.ruleVerbForms, "present:ir").why, "ruleVerbForms present:ir")],
+    ["hablar", "preterite", formsIn(keyed(MX.ruleVerbForms, "preterite:ar").why, "ruleVerbForms preterite:ar")],
+    ["comer", "preterite", formsIn(keyed(MX.ruleVerbForms, "preterite:er-ir").why, "ruleVerbForms preterite:er-ir")],
+    ["hablar", "imperfect", formsIn(keyed(MX.imperfectEndings, "imperfect:ar").ex, "imperfectEndings -ar")],
+    ["comer", "imperfect", formsIn(keyed(MX.imperfectEndings, "imperfect:er-ir").ex, "imperfectEndings -er/-ir")],
+    ["hablar", "subjunctive", formsIn(keyed(MX.ruleSubjunctive, "subjunctive:ar").why, "ruleSubjunctive -ar")],
+    ["comer", "subjunctive", formsIn(keyed(MX.ruleSubjunctive, "subjunctive:er-ir").why, "ruleSubjunctive -er/-ir")],
+  ];
+
+  const wrongWorked = [];
+  for (const [verb, tense, expected] of WORKED) {
+    const got = conj.paradigm(verb, tense);
+    if (JSON.stringify(got) !== JSON.stringify(expected)) {
+      wrongWorked.push(`${verb} ${tense}: built ${got.join(", ")} · content says ${expected.join(", ")}`);
+    }
+  }
+  check("the generator reproduces every paradigm content/ already writes out", wrongWorked, []);
+  check("  which is nine of them, covering all four tenses", WORKED.length, 9);
+
+  /* Exhaustive, not sampled: every verb, every tense, every person. */
+  const wrongGolden = [];
+  let cells = 0;
+  for (const [verb, tenses] of Object.entries(golden)) {
+    for (const [tense, expected] of Object.entries(tenses)) {
+      for (let person = 0; person < expected.length; person++) {
+        cells++;
+        const got = conj.conjugate(verb, tense, person);
+        if (got !== expected[person]) {
+          wrongGolden.push(`${verb} ${tense} ${conj.PERSONS[person]}: built "${got}", expected "${expected[person]}"`);
+        }
+      }
+    }
+  }
+  check("every cell of the golden table is built correctly", wrongGolden, []);
+  check("  and the whole table was walked", cells, 120);
+
+  /* Accents live in the ending data, and have to survive the join. Grading
+     folds them, but the answer shown to the learner must be spelled right. */
+  check("the preterite yo keeps its accent", conj.conjugate("cantar", "preterite", 0), "canté");
+  check("the preterite él keeps its accent", conj.conjugate("cantar", "preterite", 2), "cantó");
+  check("the imperfect nosotros keeps its accent", conj.conjugate("cantar", "imperfect", 3), "cantábamos");
+  check("every -er imperfect form is accented",
+    conj.paradigm("beber", "imperfect").filter((f) => /[áéíóú]/.test(f)).length, 5);
+  check("-er and -ir part company only in nosotros",
+    [conj.conjugate("beber", "present", 3), conj.conjugate("recibir", "present", 3)], ["bebemos", "recibimos"]);
+
+  /* It refuses rather than guesses. */
+  const throws = (fn) => { try { fn(); return null; } catch (e) { return e.message; } };
+  check("an unvetted verb is refused, not guessed at",
+    throws(() => conj.conjugate("sacar", "preterite", 0)),
+    'conjugate: "sacar" is not on the verified-regular list');
+  check("  and so is a verb the app knows to be irregular",
+    throws(() => conj.conjugate("pensar", "present", 0)),
+    'conjugate: "pensar" is not on the verified-regular list');
+  check("a word that is not a verb at all is refused",
+    throws(() => conj.conjugate("mesa", "present", 0)),
+    'conjugate: "mesa" is not on the verified-regular list');
+  check("an unknown tense is refused", !!throws(() => conj.conjugate("cantar", "future", 0)), true);
+  check("a person outside the paradigm is refused", !!throws(() => conj.conjugate("cantar", "present", 5)), true);
+
+  /* The drill pool is the checked verbs minus the three already taught. */
+  const pool = conj.drillableVerbs().map((r) => r.v);
+  check("the model verbs are not offered as new material",
+    pool.filter((v) => conj.MODELS.includes(v)), []);
+  check("  and every verb left is buildable in all four tenses",
+    pool.filter((v) => conj.TENSES.some((t) => conj.paradigm(v, t).some((f) => !f))), []);
+}
+
 /* ---------- probes: held-out items, and the promise that they cost nothing --- */
 
 /* The measurement only means anything if a probe stays outside everything the

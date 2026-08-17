@@ -542,3 +542,53 @@ window.MX.verbSentences = [
     ]
   }
 ];
+
+/* Regular verbs, for the conjugation generator.
+ *
+ * Everything above is irregular — that is what earned it a place. These are
+ * the opposite: verbs with nothing to say about them, whose whole paradigm
+ * falls out of the infinitive and the ending tables. src/lib/conjugate.js
+ * builds their forms rather than storing them, the same way the imperfect
+ * subjunctive is built from the ellos preterite rather than restated.
+ *
+ * Two rules for anything added here, both enforced by tools/check-content.js:
+ *
+ *   1. It must be genuinely regular in the present, preterite, imperfect and
+ *      present subjunctive. Endings that force a spelling or stem change are
+ *      rejected mechanically — -car/-gar/-zar, -ger/-gir/-guir, -uir,
+ *      -eer/-oer/-aer, -ñer/-ñir, and -iar/-uar wholesale, because whether the
+ *      i or u takes an accent (envío, but limpio) cannot be read off the
+ *      infinitive. The boot verbs — contar, pensar, pedir — look like any
+ *      other verb and no check can catch them, so that part is judgement.
+ *   2. It must be a verb the app does not already use. A form the learner has
+ *      already met is not new material, and the point of these is to reach
+ *      past what has been drilled.
+ */
+window.MX.regularVerbs = [
+  { v: "cantar", en: "to sing" },
+  { v: "bailar", en: "to dance" },
+  { v: "mirar", en: "to watch" },
+  { v: "nadar", en: "to swim" },
+  { v: "pintar", en: "to paint" },
+  { v: "saludar", en: "to greet" },
+  { v: "lavar", en: "to wash" },
+  { v: "tratar", en: "to treat" },
+
+  { v: "beber", en: "to drink" },
+  { v: "aprender", en: "to learn" },
+  { v: "correr", en: "to run" },
+  { v: "vender", en: "to sell" },
+  { v: "comprender", en: "to understand" },
+  { v: "meter", en: "to put in" },
+  { v: "prometer", en: "to promise" },
+  { v: "sorprender", en: "to surprise" },
+
+  { v: "recibir", en: "to receive" },
+  { v: "decidir", en: "to decide" },
+  { v: "permitir", en: "to allow" },
+  { v: "existir", en: "to exist" },
+  { v: "partir", en: "to split" },
+  { v: "admitir", en: "to admit" },
+  { v: "insistir", en: "to insist" },
+  { v: "compartir", en: "to share" },
+];
