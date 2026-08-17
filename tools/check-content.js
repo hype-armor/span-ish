@@ -357,7 +357,10 @@ requireBlank("verbSentences", (r) => r.sents);
     ]);
 
     /* A verb the app already uses is not new material, which is the whole
-       point of these. Checked against every deck's own text. */
+       point of these. This catches an infinitive appearing in another deck;
+       it cannot catch a verb the app only ever shows conjugated, because
+       \bescuchar\b does not match "escuchaba". tools/test-lib.js closes that
+       by generating each verb's own forms and looking for those. */
     const spoken = fs.readdirSync(CONTENT)
       .filter((f) => f !== "verbs.js")
       .map((f) => fs.readFileSync(path.join(CONTENT, f), "utf8"))

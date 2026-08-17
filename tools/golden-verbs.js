@@ -23,11 +23,11 @@ module.exports = {
     imperfect: ["cantaba", "cantabas", "cantaba", "cantábamos", "cantaban"],
     subjunctive: ["cante", "cantes", "cante", "cantemos", "canten"],
   },
-  nadar: {
-    present: ["nado", "nadas", "nada", "nadamos", "nadan"],
-    preterite: ["nadé", "nadaste", "nadó", "nadamos", "nadaron"],
-    imperfect: ["nadaba", "nadabas", "nadaba", "nadábamos", "nadaban"],
-    subjunctive: ["nade", "nades", "nade", "nademos", "naden"],
+  pintar: {
+    present: ["pinto", "pintas", "pinta", "pintamos", "pintan"],
+    preterite: ["pinté", "pintaste", "pintó", "pintamos", "pintaron"],
+    imperfect: ["pintaba", "pintabas", "pintaba", "pintábamos", "pintaban"],
+    subjunctive: ["pinte", "pintes", "pinte", "pintemos", "pinten"],
   },
   beber: {
     present: ["bebo", "bebes", "bebe", "bebemos", "beben"],

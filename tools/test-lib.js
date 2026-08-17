@@ -278,6 +278,30 @@ const srs = load("src/lib/srs.js");
   check("an unknown tense is refused", !!throws(() => conj.conjugate("cantar", "future", 0)), true);
   check("a person outside the paradigm is refused", !!throws(() => conj.conjugate("cantar", "present", 5)), true);
 
+  /* Genuinely new material.
+   *
+   * The point of these verbs is that the learner has not met them, and the
+   * linter can only check that the infinitive is absent — it cannot see that
+   * "escuchaba" means escuchar is already on screen. So generate every form of
+   * every verb and look for those. Homographs make this slightly over-strict
+   * (nadar collides with "nada", meaning nothing), which costs a verb and is
+   * the cheaper direction to be wrong in. */
+  {
+    const corpus = fs.readdirSync(path.join(ROOT, "content"))
+      .filter((f) => f !== "verbs.js")
+      .map((f) => fs.readFileSync(path.join(ROOT, "content", f), "utf8"))
+      .join("\n")
+      .toLowerCase();
+
+    const alreadySeen = [];
+    for (const row of conj.drillableVerbs()) {
+      const forms = conj.TENSES.flatMap((t) => conj.paradigm(row.v, t));
+      const hits = [...new Set([row.v, ...forms])].filter((f) => new RegExp(`\\b${f}\\b`).test(corpus));
+      if (hits.length) alreadySeen.push(`${row.v} (as ${hits.join(", ")})`);
+    }
+    check("no verb in the pool is one the app already shows", alreadySeen, []);
+  }
+
   /* The drill pool is the checked verbs minus the three already taught. */
   const pool = conj.drillableVerbs().map((r) => r.v);
   check("the model verbs are not offered as new material",

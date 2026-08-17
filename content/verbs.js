@@ -568,7 +568,7 @@ window.MX.regularVerbs = [
   { v: "cantar", en: "to sing" },
   { v: "bailar", en: "to dance" },
   { v: "mirar", en: "to watch" },
-  { v: "nadar", en: "to swim" },
+  { v: "invitar", en: "to invite" },
   { v: "pintar", en: "to paint" },
   { v: "saludar", en: "to greet" },
   { v: "lavar", en: "to wash" },
@@ -584,7 +584,7 @@ window.MX.regularVerbs = [
   { v: "sorprender", en: "to surprise" },
 
   { v: "recibir", en: "to receive" },
-  { v: "decidir", en: "to decide" },
+  { v: "asistir", en: "to attend" },
   { v: "permitir", en: "to allow" },
   { v: "existir", en: "to exist" },
   { v: "partir", en: "to split" },
