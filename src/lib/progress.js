@@ -43,5 +43,11 @@ export function normalise(saved) {
      every export taken from one — simply starts it from scratch. Review
      history is the part that cannot be regenerated; levels and streaks are
      read back off that history anyway. */
-  return { scores: shaped.scores || {}, items, reviews, game: normaliseGame(shaped.game, Date.now()) };
+  /* Held-out probe tallies, newer still. Same shape as reviews: a small
+     keyed aggregate, so an older save simply has none. */
+  const probes = {};
+  for (const [family, raw] of Object.entries(shaped.probes || {})) {
+    probes[family] = { asked: Number(raw.asked) || 0, right: Number(raw.right) || 0 };
+  }
+  return { scores: shaped.scores || {}, items, reviews, probes, game: normaliseGame(shaped.game, Date.now()) };
 }

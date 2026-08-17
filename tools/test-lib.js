@@ -15,6 +15,16 @@ const esbuild = require("esbuild");
 
 const ROOT = path.join(__dirname, "..");
 
+/* The content decks are plain browser scripts that assign onto window.MX, and
+   src/lib/content.js reads that at module scope. Anything bundled below may
+   pull it in transitively — merge.js reaches it through probe.js — so the
+   globals have to exist before the first load(), not beside the first test
+   that happens to need them. */
+global.window = global;
+for (const file of fs.readdirSync(path.join(ROOT, "content"))) {
+  require(path.join(ROOT, "content", file));
+}
+
 /* The source is ESM; bundle it to CJS so it can be required here. */
 function load(entry) {
   const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "mx-test-")), "bundle.cjs");
@@ -174,6 +184,87 @@ const srs = load("src/lib/srs.js");
   check("a short deck yields what it has", small.length, 4);
 }
 
+/* ---------- probes: held-out items, and the promise that they cost nothing --- */
+
+/* The measurement only means anything if a probe stays outside everything the
+   app scores. These assert the four properties src/lib/probe.js claims. */
+{
+  const probe = load("src/lib/probe.js");
+  const decks = load("src/lib/decks.js");
+  const { withProbes } = decks;
+
+  /* 1. Nothing scheduled is a probe. ALL_IDS, the mastery denominator, the
+     region meter and the stats split all come off cardsFor. */
+  check("no probe leaks into the scheduled deck",
+    decks.cardsFor("mixed").filter((c) => c.probe).length, 0);
+  check("  so the id count is untouched", decks.ALL_IDS.length, decks.cardsFor("mixed").length);
+
+  /* 2. Held-out means held out: no probe word is also a taught card. */
+  const taught = new Set(decks.cardsFor("suffix").map((c) => String(c.q).toLowerCase()));
+  const overlap = probe.inventoryFor("suffix").filter((i) => taught.has(i.en.toLowerCase()));
+  check("no probe word is also drilled", overlap.map((i) => i.en), []);
+
+  /* 3. The cursor never re-asks. */
+  const first = probe.drawProbes("suffix", {}, 5).map((i) => i.en);
+  const next = probe.drawProbes("suffix", { suffix: { asked: 5, right: 3 } }, 5).map((i) => i.en);
+  check("a draw returns what was asked for", first.length, 5);
+  check("  and the next draw repeats none of it",
+    next.filter((w) => first.includes(w)), []);
+  check("the order is stable across calls", probe.drawProbes("suffix", {}, 5).map((i) => i.en), first);
+
+  const size = probe.inventoryFor("suffix").length;
+  check("an exhausted family yields nothing",
+    probe.drawProbes("suffix", { suffix: { asked: size, right: 0 } }, 3), []);
+  check("  and says so", probe.remainingFor("suffix", { suffix: { asked: size, right: 0 } }), 0);
+
+  /* 4. The tally counts what was asked, and merges without double-counting. */
+  let tallied = {};
+  tallied = probe.tallyProbe(tallied, "suffix", true);
+  tallied = probe.tallyProbe(tallied, "suffix", false);
+  check("the tally counts asked and right", tallied, { suffix: { asked: 2, right: 1 } });
+
+  const mineP = { suffix: { asked: 10, right: 8 } };
+  const theirsP = { suffix: { asked: 4, right: 3 }, gender: { asked: 6, right: 6 } };
+  const oneP = probe.mergeProbes(mineP, theirsP);
+  check("merging probes takes the larger side", oneP.suffix, { asked: 10, right: 8 });
+  check("  and picks up a family only the other side had", oneP.gender, { asked: 6, right: 6 });
+  check("merging probes twice is the same as once", probe.mergeProbes(oneP, theirsP), oneP);
+
+  /* The split is what keeps probes out of the scheduler. */
+  const mixed = [
+    { id: "sfx:-tion", right: true },
+    { id: "probe:suffix:action", right: false, probe: "suffix" },
+    { id: "gen:mano", right: true },
+  ];
+  const split = probe.partitionAnswers(mixed);
+  check("answers and probes are separated", [split.answers.length, split.probes.length], [2, 1]);
+  check("  and the probe is the one that was marked", split.probes[0].id, "probe:suffix:action");
+  check("an empty round splits to nothing", probe.partitionAnswers([]), { answers: [], probes: [] });
+
+  /* Where they are allowed to appear, and where they are not. */
+  const round = Array.from({ length: 9 }, (_, i) => ({ id: "c" + i, kind: "type" }));
+  const countProbes = (r) => r.filter((c) => c.probe).length;
+
+  check("sudden death takes no probes", countProbes(withProbes(round, "suffix", "sudden", {})), 0);
+  check("a boss takes no probes", countProbes(withProbes(round, "suffix", "boss", {})), 0);
+  check("By Ear takes no probes", countProbes(withProbes(round, "suffix", "ear", {})), 0);
+  check("Ambush takes no typed probe", countProbes(withProbes(round, "suffix", "ambush", {})), 0);
+  check("Recon takes them", countProbes(withProbes(round, "suffix", "plain", {})), 2);
+  check("  on top of the scheduled cards, not instead of them",
+    withProbes(round, "suffix", "plain", {}).length, round.length + 2);
+  check("a module with no probe family gets none",
+    countProbes(withProbes(round, "verbs", "plain", {})), 0);
+
+  /* Never first, never last: a mission should not open or close on a card that
+     counts for nothing. */
+  let edge = 0;
+  for (let i = 0; i < 200; i++) {
+    const r = withProbes(round, "suffix", "plain", {});
+    if (r[0].probe || r[r.length - 1].probe) edge++;
+  }
+  check("a probe is never the first or last card of a mission", edge, 0);
+}
+
 /* ---------- the Transformer's live converter ---------- */
 
 /* The machine is a heuristic and will never handle every English word, but it
@@ -182,9 +273,6 @@ const srs = load("src/lib/srs.js");
    is the app contradicting itself in public. Written accents are excluded,
    because the note under the box says the machine leaves them off. */
 {
-  global.window = global;
-  const CONTENT = path.join(ROOT, "content");
-  for (const f of fs.readdirSync(CONTENT)) require(path.join(CONTENT, f));
   const { convert } = load("src/lib/suffix.js");
 
   const bare = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -195,12 +283,17 @@ const srs = load("src/lib/srs.js");
 
   const wrong = [];
   for (const rule of global.MX.suffixes) {
-    for (const [english, spanish] of rule.ex) {
+    /* Probe pairs go through the same gate as the taught ones. A probe has to
+       be answerable from the ending swap alone, and the converter is exactly a
+       machine that does only the ending swap — so if the two disagree, either
+       my Spanish is wrong or the word needs more than the rule, and both are
+       reasons to keep it out of the held-out set. */
+    for (const [english, spanish] of [...rule.ex, ...(rule.probe || [])]) {
       const got = render(english);
       if (bare(got) !== bare(spanish)) wrong.push(`${english} → ${got}, but the deck says ${spanish}`);
     }
   }
-  check("every documented suffix example converts to the Spanish beside it", wrong, []);
+  check("every taught and held-out suffix pair converts to the Spanish beside it", wrong, []);
 
   /* The chips are the highest-traffic path into the machine. */
   check("every one-tap example matches a rule",

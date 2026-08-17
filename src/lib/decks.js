@@ -13,6 +13,7 @@
  */
 import { shuffle, sample, pick, distractors } from "./text.js";
 import * as content from "./content.js";
+import { drawProbes, familyFor } from "./probe.js";
 
 const BLANK = "⌷"; // what a ___ becomes in a prompt
 
@@ -409,4 +410,66 @@ export function poolFor(mod, mode) {
     : mode === "forge" ? all.filter((c) => c.kind === "type")
     : all;
   return narrowed.length >= 8 ? narrowed : all;
+}
+
+/* Probe cards, which are deliberately not part of any of the above.
+ *
+ * Kept out of BUILDERS and out of cardsFor on purpose: ALL_IDS, IDS_BY_MOD,
+ * tools/deck-stats.js and the Lab's leech list all derive from cardsFor, so a
+ * probe leaking into it would land in the mastery denominator, the region
+ * meter and the recognition/production split the design doc argues from. The
+ * id here is a React key and a label on the results screen; it is never
+ * persisted and never scheduled. See src/lib/probe.js. */
+export function probeCardsFor(mod, probes, n) {
+  const family = familyFor(mod);
+  if (!family) return [];
+  return drawProbes(family.id, probes, n).map((item) => ({
+    id: "probe:" + family.id + ":" + item.en,
+    probe: family.id,
+    kind: "type",
+    mod,
+    q: item.en,
+    sub: family.sub,
+    a: item.es,
+    canon: item.es,
+    audio: item.es,
+    why: `${item.en} → ${item.es}. ${item.rule.en} → ${item.rule.es}. ${item.rule.note}`,
+  }));
+}
+
+/* Probes ride along inside ordinary missions rather than living in a mode of
+   their own: a measurement you have to opt into is missing exactly for the
+   learner who is memorising. Never in sudden death — a probe ending the run
+   would be brutal, and learners would start answering it defensively, which
+   corrupts the thing being measured — and never in a boss, which promises to
+   be built from your own misses. See src/lib/probe.js. */
+const PROBE_MODES = new Set(["plain", "rapid", "ambush", "forge"]);
+const PROBES_PER_MISSION = 2;
+
+export function withProbes(round, mod, mode, probes) {
+  if (!PROBE_MODES.has(mode) || round.length < 4) return round;
+
+  /* A mode narrows its deck to a shape; a probe that does not fit that shape
+     would break the promise the mode makes. A typed probe has no business in
+     Ambush, which is two options and a flick. */
+  const fits = (card) =>
+    mode === "forge" ? card.kind === "type"
+    : mode === "ambush" ? card.kind === "mc" && card.opts && card.opts.length === 2
+    : true;
+
+  const extra = probeCardsFor(mod, probes, PROBES_PER_MISSION).filter(fits);
+  if (!extra.length) return round;
+
+  /* Added on top of the mission's size rather than displacing scheduled cards:
+     spending real review slots on a measurement would slow the schedule down
+     in order to watch it. Placed in the back two-thirds so the run has found
+     its feet, and never last, so a mission does not end on a card that counts
+     for nothing. */
+  const out = [...round];
+  const earliest = Math.max(1, Math.floor(out.length / 3));
+  for (const card of extra) {
+    const at = earliest + Math.floor(Math.random() * Math.max(1, out.length - earliest));
+    out.splice(at, 0, card);
+  }
+  return out;
 }

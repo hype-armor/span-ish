@@ -423,6 +423,7 @@ async function assertScrolls(page, where) {
   if (!stored.game) fail("the saved progress carries no game state");
   else pass("the game state saved alongside the review history");
 
+
   /* Dismissing the intro has to stick, or every reload would start with a
      wall of text somebody has already read. */
   {
@@ -563,6 +564,64 @@ async function assertScrolls(page, where) {
     }
 
     if (clean) pass(`${checked} cards fit ${SMALL.width}×${SMALL.height} answered and unanswered`);
+
+    /* The measurement rests entirely on a held-out item costing nothing, and
+       that is a claim about what ends up in storage. The walk above abandons
+       every mission, so play one in La Fragua all the way to its results —
+       which is what commits it — and then read the save back.
+
+       Both halves matter. Probes must have been asked, or the measurement is
+       silently not running; and none of them may have become a scheduled item
+       or landed in a review band, or the number is just more of the same. */
+    {
+      await open.setViewportSize({ width: 1000, height: 1200 });
+      await open.click('.dock-btn[aria-label^="Ruta"]');
+      await open.waitForTimeout(120);
+      await open.click('.map-cell:has(.node-label:text-is("La Fragua")) .node');
+      await open.waitForSelector(".region-screen", { timeout: 5000 });
+      await open.click(".stage-btn:not([disabled])"); // Recon: no clock, and probes ride along
+      await open.waitForSelector(".mission", { timeout: 5000 });
+
+      let seenPill = false;
+      for (let i = 0; i < 40; i++) {
+        if (await open.$(".pill:text-matches('Never seen')")) seenPill = true;
+        const input = await open.$("input.answer-input:not([disabled])");
+        const opts = await open.$$(".opt:not([disabled]), .ambush-opt:not([disabled])");
+        if (input) { await input.fill("respuesta"); await input.press("Enter"); }
+        else if (opts.length) await opts[0].click();
+        else break;
+        await open.waitForTimeout(60);
+        const next = await open.$(".mission-foot button");
+        if (!next) break;
+        const label = await next.textContent();
+        await next.click();
+        await open.waitForTimeout(120);
+        if (/results|ended|Finish/.test(label)) break;
+      }
+      await open.waitForSelector(".result", { timeout: 5000 });
+
+      const saved = await open.evaluate(() => {
+        try { return JSON.parse(localStorage.getItem("mx-pwa:mx:progress")) || {}; } catch { return {}; }
+      });
+      const scheduled = Object.keys(saved.items || {}).filter((id) => id.startsWith("probe:"));
+      const asked = ((saved.probes || {}).suffix || {}).asked || 0;
+      const banded = Object.values(saved.reviews || {}).reduce((n, b) => n + (b.right || 0) + (b.wrong || 0), 0);
+
+      if (!asked) fail("La Fragua's Recon asked no held-out items, so the measurement is not running");
+      else if (scheduled.length) fail(`a held-out item reached the schedule: ${scheduled.join(", ")}`);
+      else if (!banded) fail("no ordinary review was banded either, so this proves nothing");
+      else pass(`${asked} held-out items asked, none scheduled, none banded`);
+      if (!seenPill) fail("a probe was asked without saying it counts for nothing");
+      else pass("  and each one said so on the card");
+
+      /* Leave the results screen the way the app expects, or the next section
+         starts on a screen with no dock on it. */
+      const leave = await open.$('.mission-foot button:has-text("Back to")');
+      if (leave) await leave.click();
+      else await open.click('.icon-btn[aria-label="Leave this mission"]');
+      await open.waitForSelector(".region-screen", { timeout: 5000 });
+      await open.setViewportSize(SMALL);
+    }
 
     /* And the worst results screen the app can produce, at the same size: a
        long run answered badly, which is what the caps on the two lists are

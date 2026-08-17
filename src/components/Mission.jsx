@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "../react.js";
-import { poolFor } from "../lib/decks.js";
+import { poolFor, withProbes } from "../lib/decks.js";
 import { convert } from "../lib/suffix.js";
 import { matches } from "../lib/text.js";
 import { buildRound, bossRound, previewInterval, isDue } from "../lib/srs.js";
@@ -7,6 +7,7 @@ import { MODES, TIMED_MODES, comboMultiplier } from "../lib/game.js";
 import { sfx } from "../lib/juice.js";
 import { MissionResult } from "./Results.jsx";
 import { Glossed, useGlossary } from "./Glossary.jsx";
+import { partitionAnswers } from "../lib/probe.js";
 
 const ACCENTS = ["á", "é", "í", "ó", "ú", "ñ", "¿", "¡"];
 const BLANK = "⌷";
@@ -81,9 +82,10 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
   const freshRound = () => {
     const now = Date.now();
     const pool = poolFor(region.mod, mode);
-    return mode === "boss"
+    const scheduled = mode === "boss"
       ? bossRound(pool, stage.size, progress.items, now)
       : buildRound(pool, stage.size, progress.items, now);
+    return withProbes(scheduled, region.mod, mode, progress.probes);
   };
 
   const [round, setRound] = useState(freshRound);
@@ -105,17 +107,21 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
   const card = round[index];
   const answered = verdict !== "open";
   const history = card ? progress.items[card.id] : null;
-  const rightSoFar = results.filter((r) => r.right).length;
+  const rightSoFar = results.filter((r) => r.right && !r.probe).length;
 
   const maxHp = stage.size * BOSS_HP_PER_CARD;
-  const timed = TIMED_MODES.has(mode) && card && card.kind === "mc";
+  const timed = TIMED_MODES.has(mode) && card && card.kind === "mc" && !card.probe;
 
   /* ---------- ending ---------- */
 
   const end = useCallback(
-    (answers, won) => {
+    (all, won) => {
       if (finished.current) return;
       finished.current = true;
+      /* Split before anything is scored. A probe must not reach the scheduler,
+         the day's counters, the module tallies, or even this mission's own
+         percentage — it is not work the scheduler asked for. */
+      const { answers, probes } = partitionAnswers(all);
       const value =
         mode === "boss" ? Math.max(0, maxHp - hp)
         : mode === "sudden" ? answers.filter((a) => a.right).length
@@ -126,9 +132,10 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
         mode,
         region: region.id,
         stage: stage.id,
+        probes: probes.map((p) => ({ family: p.probe, right: p.right })),
         score: { won, value },
       });
-      setOutcome({ ...report, results: answers, won, value });
+      setOutcome({ ...report, results: answers, probes, won, value });
       if (won === false) sfx.fail();
       else sfx.clear();
     },
@@ -140,16 +147,20 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
   const settle = useCallback(
     (right, given) => {
       if (finished.current) return;
+      const isProbe = !!card.probe;
       const wasDue = !history || isDue(history, Date.now());
-      const nextCombo = right ? combo + 1 : 0;
+      /* The combo is part of "pays nothing" too: breaking a run you earned, on
+         a card that counts for nothing, would be a penalty for cooperating
+         with the measurement. */
+      const nextCombo = isProbe ? combo : right ? combo + 1 : 0;
 
       setVerdict(right ? "right" : "wrong");
       setCombo(nextCombo);
-      setResults((prev) => [...prev, { id: card.id, right, wasDue, label: labelFor(card), given }]);
+      setResults((prev) => [...prev, { id: card.id, right, wasDue, label: labelFor(card), given, probe: card.probe }]);
 
       if (right) {
         sfx.right(nextCombo);
-        if (mode === "boss") {
+        if (mode === "boss" && !isProbe) {
           const damage = BOSS_HP_PER_CARD + Math.round(BOSS_HP_PER_CARD * (comboMultiplier(nextCombo - 1) - 1) * 0.5);
           setHp((h) => Math.max(0, h - damage));
           setFlash({ text: "−" + damage, kind: "hit" });
@@ -157,11 +168,11 @@ export function Mission({ region, stage, progress, speak, onFinish, onExit, moti
         }
       } else {
         sfx.wrong();
-        if (mode === "boss") {
+        if (mode === "boss" && !isProbe) {
           setHp((h) => Math.min(maxHp, h + BOSS_HEAL));
           setFlash({ text: "+" + BOSS_HEAL, kind: "heal" });
         }
-        if (HEARTS[mode]) setHearts((n) => Math.max(0, n - 1));
+        if (HEARTS[mode] && !isProbe) setHearts((n) => Math.max(0, n - 1));
       }
     },
     [card, combo, history, mode, maxHp],
@@ -570,6 +581,10 @@ function labelFor(card) {
 /* What this card is to you, said before you answer it. Knowing an item is one
    you have missed before is part of the retrieval, not a spoiler. */
 function statusPill(card, history) {
+  /* Said out loud rather than hidden. Knowing the card does not count costs a
+     little validity; pretending otherwise would be out of character for an app
+     whose Lab is the one place nothing is dressed up. */
+  if (card.probe) return <span className="pill pill-pri">Never seen · counts for nothing</span>;
   if (!history) return <span className="pill pill-good">New</span>;
   if (history.streak === 0 && history.wrong > 0) return <span className="pill pill-bad">Missed before</span>;
   if (isDue(history, Date.now())) return <span className="pill pill-pri">Due for review</span>;

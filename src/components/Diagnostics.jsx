@@ -2,6 +2,7 @@ import React, { useMemo } from "../react.js";
 import { Table } from "./bits.jsx";
 import { REVIEW_BANDS, MIN_REVIEWS_TO_READ } from "../lib/srs.js";
 import { cardsFor, MODULES } from "../lib/decks.js";
+import { PROBE_FAMILIES, MIN_PROBES_TO_READ, remainingFor } from "../lib/probe.js";
 
 const LABELS = {
   new: "first sight",
@@ -48,6 +49,21 @@ export function Diagnostics({ progress }) {
     })
     .sort((a, b) => a.rate - b.rate);
 
+  /* The drilled side of the comparison is the module's own accuracy, since
+     that is the same material asked the same way. */
+  const transfer = PROBE_FAMILIES.map((family) => {
+    const { asked = 0, right = 0 } = (progress.probes || {})[family.id] || {};
+    const drilled = progress.scores[family.mod];
+    return {
+      ...family,
+      asked,
+      novelRate: asked ? Math.round((100 * right) / asked) : null,
+      drilledTotal: drilled ? drilled.total : 0,
+      drilledRate: drilled && drilled.total ? Math.round((100 * drilled.right) / drilled.total) : null,
+      left: remainingFor(family.id, progress.probes),
+    };
+  }).filter((f) => f.asked > 0);
+
   const leeches = Object.entries(progress.items || {})
     .filter(([, item]) => (item.lapses || 0) >= LEECH_THRESHOLD)
     .sort((a, b) => (b[1].lapses || 0) - (a[1].lapses || 0))
@@ -92,6 +108,42 @@ export function Diagnostics({ progress }) {
           </tr>
         ))}
       </Table>
+
+      {transfer.length > 0 && (
+        <>
+          <div className="card-k" style={{ marginTop: 22 }}>The rule, or the cards?</div>
+          <div className="card-v" style={{ maxWidth: "58ch" }}>
+            Every so often a mission slips in a word the app has never shown you, drawn from a rule
+            you have been drilling. Those cards are never scheduled, never repeated, and earn
+            nothing. Strong on the drilled cards and weak on the never-seen ones is the signal worth
+            having: it means the pairs are learned and the rule is not. Read it as a floor rather
+            than a measurement — some of those words you may simply know, and the drilled column is
+            asked at the edge of forgetting while these are always at first sight.
+          </div>
+          <Table head={["Rule family", "Drilled", "Never seen", "Asked"]}>
+            {transfer.map((f) => (
+              <tr key={f.id}>
+                <td className="key">{f.label}</td>
+                <td className="mono term" style={{ color: "var(--faint)" }}>
+                  {f.drilledRate === null ? "—" : f.drilledRate + "%"}
+                </td>
+                <td className="mono term" style={{
+                  color: f.asked < MIN_PROBES_TO_READ ? "var(--faint)"
+                    : f.novelRate >= 85 ? "var(--good)"
+                    : f.novelRate >= 70 ? "var(--primary)"
+                    : "var(--bad)",
+                }}>
+                  {f.novelRate}%
+                </td>
+                <td className="dim">
+                  {f.asked}{f.asked < MIN_PROBES_TO_READ ? " · too few" : ""}
+                  {f.left === 0 ? " · none left" : ""}
+                </td>
+              </tr>
+            ))}
+          </Table>
+        </>
+      )}
 
       {modules.length > 0 && (
         <>

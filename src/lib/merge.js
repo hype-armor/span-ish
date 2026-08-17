@@ -9,6 +9,7 @@
  * lapse. Cumulative counters take the larger of the two so totals never go
  * backwards, and a side that has never seen the item contributes nothing. */
 import { mergeGame } from "./game.js";
+import { mergeProbes } from "./probe.js";
 
 function mergeItem(mine, theirs) {
   if (!mine) return theirs;
@@ -70,6 +71,7 @@ export function mergeProgress(mine, theirs) {
       scores,
       items,
       reviews: mergeReviews(mine.reviews, theirs.reviews),
+      probes: mergeProbes(mine.probes, theirs.probes),
       game: mergeGame(mine.game, theirs.game),
     },
     added,

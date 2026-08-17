@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "./react.js";
 import { useSpeech } from "./lib/speech.js";
 import { record as recordItem, summarise, tallyReview } from "./lib/srs.js";
+import { tallyProbe } from "./lib/probe.js";
 import { ALL_IDS, ALL_ID_SET } from "./lib/decks.js";
 import { normalise } from "./lib/progress.js";
 import { PROGRESS_KEYS, THEME_KEYS, readFirst } from "./lib/storage.js";
@@ -22,7 +23,7 @@ import { CodexScreen } from "./screens/Codex.jsx";
 import { TodayScreen } from "./screens/Today.jsx";
 import { LabScreen } from "./screens/Lab.jsx";
 
-const EMPTY = { scores: {}, items: {}, reviews: {}, game: null };
+const EMPTY = { scores: {}, items: {}, reviews: {}, probes: {}, game: null };
 
 /* The shell.
  *
@@ -124,7 +125,7 @@ export function App() {
   const finishMission = useCallback((payload) => {
     const now = Date.now();
     const before = progressRef.current;
-    const { answers, mode, region, stage, score } = payload;
+    const { answers, probes: probeAnswers, mode, region, stage, score } = payload;
 
     const items = { ...before.items };
     let reviews = before.reviews || {};
@@ -136,6 +137,13 @@ export function App() {
       items[answer.id] = recordItem(items[answer.id], answer.right, now);
       if (answer.right) right++;
     }
+
+    /* Held-out items are tallied and nothing else. They never enter `items`,
+       never touch a review band, never move a module's score, and never reach
+       the game layer below — which is the whole reason the number they produce
+       can be read as transfer rather than as more of the same. */
+    let probes = before.probes || {};
+    for (const probe of probeAnswers || []) probes = tallyProbe(probes, probe.family, probe.right);
 
     const mod = (regionById(region) || {}).mod || region;
     const was = before.scores[mod] || { right: 0, total: 0, best: 0 };
@@ -175,7 +183,7 @@ export function App() {
       .filter(({ quest, was }) => quest.done && !was.done)
       .map(({ quest }) => quest);
 
-    setProgress({ scores, items, reviews, game: awarded.game });
+    setProgress({ scores, items, reviews, probes, game: awarded.game });
 
     return {
       quests: questsDone,

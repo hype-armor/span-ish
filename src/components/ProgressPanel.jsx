@@ -51,7 +51,11 @@ export function ProgressPanel({ progress, persist }) {
     }
     /* The game layer rides along untouched: it is re-derived on the way in by
        normalise(), and an export written before it existed simply has none. */
-    return { scores: parsed.scores || {}, items, reviews, game: normaliseGame(parsed.game, Date.now()) };
+    const probes = {};
+    for (const [family, raw] of Object.entries(parsed.probes || {})) {
+      probes[family] = { asked: Number(raw.asked) || 0, right: Number(raw.right) || 0 };
+    }
+    return { scores: parsed.scores || {}, items, reviews, probes, game: normaliseGame(parsed.game, Date.now()) };
   };
 
   const badPaste = () =>
@@ -83,7 +87,7 @@ export function ProgressPanel({ progress, persist }) {
 
   const reset = () => {
     if (!armed) { setArmed(true); setStatus(null); return; }
-    persist({ scores: {}, items: {}, reviews: {}, game: null });
+    persist({ scores: {}, items: {}, reviews: {}, probes: {}, game: null });
     setArmed(false);
     setText("");
     setStatus({ ok: true, msg: "Cleared. Every item counts as unmet again, and the map closes back up." });

@@ -198,6 +198,40 @@ requireUnique("suffixes", "the English ending", (r) => r.en);
   });
 });
 
+/* Held-out probe pairs. These are never shown as cards, so nothing else in the
+   app would notice them going wrong — the linter is the only thing standing
+   between a typo here and a learner being marked wrong for knowing the rule.
+   tools/test-lib.js separately checks each pair against the converter. */
+{
+  const seenEn = new Map();
+  const seenEs = new Map();
+  (MX.suffixes || []).forEach((r) => {
+    const probe = r.probe;
+    if (!Array.isArray(probe) || probe.length < 6) {
+      fail("suffixes", `"${r.en}" has ${(probe || []).length} probe pairs; a family that runs dry stops being measurable`);
+      return;
+    }
+    const taught = new Set(r.ex.map(([en]) => String(en).toLowerCase()));
+    probe.forEach((pair, i) => {
+      if (!Array.isArray(pair) || pair.length !== 2) {
+        fail("suffixes", `"${r.en}" probe ${i} is not an [english, spanish] pair`);
+        return;
+      }
+      const [en, es] = pair;
+      if (taught.has(String(en).toLowerCase())) {
+        fail("suffixes", `"${en}" is both taught and held out for ${r.en}; a probe has to be a word the app never shows`);
+      }
+      if (!r.re.test(en)) {
+        fail("suffixes", `"${en}" is a probe for ${r.en} but does not match that rule's own pattern`);
+      }
+      if (seenEn.has(en)) fail("suffixes", `probe word "${en}" appears under both ${seenEn.get(en)} and ${r.en}`);
+      else seenEn.set(en, r.en);
+      if (seenEs.has(es)) fail("suffixes", `probe answer "${es}" appears under both ${seenEs.get(es)} and ${r.en}`);
+      else seenEs.set(es, r.en);
+    });
+  });
+}
+
 /* A chip that matches no rule shows "no rule matches that ending". */
 (MX.converterExamples || []).forEach((word) => {
   if (typeof word !== "string" || !word.trim()) { fail("converterExamples", `"${word}" is not a word`); return; }
