@@ -125,6 +125,57 @@ rule and apply it in a single step, which loads two things at once. It is also
 why it is the region the map opens with: everything downstream is cheaper once
 the rule itself is free.
 
+### 7a. A rule is only learned if it reaches a word you have not met
+
+Principle 7 splits knowing a rule from applying it. This one is about the gap
+underneath both: a card drilled to mastery proves the *card* is known, and says
+nothing about whether the rule generalises.
+
+Every card in this app is drawn from a frozen authored pool, and every number it
+reports — XP, `masteryPoints`, region fill, the interval bands and their 85–90%
+target — is computed on cards already seen. That makes memorisation and
+induction indistinguishable from inside: a learner who has learned four hundred
+pairs and one who has learned the rules produce identical readings. The stable
+id rule, which exists for good scheduling reasons, is exactly the condition that
+makes item-level memorisation both most likely and least detectable.
+
+Birnbaum, Kornell, Bjork & Bjork (2013) is cited under principle 3 for
+interleaving, but its subject is *inductive* learning — the ability to classify
+new instances, not to recall studied ones. The measure it implies is one this
+app did not have.
+
+**In the app:** occasional held-out items, drawn by rule from words never shown
+as cards. `src/lib/probe.js`. They are answered and explained like any other
+card and then discarded, and El Laboratorio reports drilled accuracy beside
+never-seen accuracy.
+
+Four properties make a probe a measurement rather than more cards, and all four
+are load-bearing:
+
+- **It never becomes a scheduled item.** Probing spends the item — a held-out
+  set that entered the schedule would be a memorised set within three sessions,
+  which is the disease.
+- **It pays nothing.** No XP, goal, streak, mastery or region fill, and not the
+  combo either. See below.
+- **It is never repeated.** One cursor per family doubles as the denominator, so
+  the two cannot disagree.
+- **It says so on the card.** This costs a little validity and buys honesty; in
+  an app whose Lab is the place nothing is dressed up, hiding it would be out of
+  character.
+
+**Do not** report a single derived "generalisation score". It would be
+currency-shaped, it would hide the sample size, and the contrast is confounded
+anyway: scheduled items are asked at the edge of forgetting, held-out ones are
+always at first sight. Two columns and a caveat, read the way the interval bands
+are read.
+
+**Do not** grade a held-out item against a generator. The suffix converter is a
+heuristic that omits written accents by design and has real gaps; it is used
+here as an oracle in CI — every taught and held-out pair must agree with what it
+derives — and never as a source of answers. That gate rejected 20 of 150
+candidate pairs, in every case because the word needed Spanish orthography on
+top of the ending swap, which is not what the probe is asking about.
+
 ### 8. Reading and answering are different activities, and live apart
 
 The reference material used to sit above each drill, which meant it was always
@@ -184,6 +235,12 @@ the work the scheduler asked for. Concretely:
 | Level | `masteryPoints`: every item weighted by its interval band. Only lengthening intervals move it. |
 | Region fill | The share of that region's items at `solid` or better. |
 | Boss | Drawn from your own highest-lapse, lowest-ease items. |
+
+Held-out probes are the one card type that pays into none of these rows, and
+that is consistency rather than an exception: the rule is that a number moves
+only for work the scheduler asked for, and a probe is by definition not that.
+It buys the one thing the game layer cannot otherwise offer — a reading that its
+own scoring cannot reach.
 
 The point of the table is that none of these rows can be gamed by grinding easy
 material, because none of them counts easy material. `tools/test-lib.js` asserts

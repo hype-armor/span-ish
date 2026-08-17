@@ -136,6 +136,29 @@ export const CODEX = {
       ),
     },
     {
+      id: "transfer",
+      short: "Rule or cards",
+      title: "Knowing the rule and knowing the cards",
+      Body: () => (
+        <>
+          <Lede>
+            These are different things, and the second one is easy to mistake for the first. Every
+            card here is drilled until it is answered from memory, which is the whole point — but a
+            card answered from memory tells you nothing about whether the rule underneath it
+            generalises. You can know all forty-five suffix examples cold and still stall on the
+            forty-sixth word.
+          </Lede>
+          <Lede>
+            So the app occasionally asks a word it has never shown you, built from a rule you have
+            been drilling. Those cards say so on the front. They are never scheduled, never asked
+            twice, and earn nothing at all — they exist to be counted, not to be won. El Laboratorio
+            reports the two side by side, and a wide gap between them means the pairs are learned
+            and the rule is not.
+          </Lede>
+        </>
+      ),
+    },
+    {
       id: "suffixes",
       short: "Suffix map",
       title: "The suffix map, ending to ending",
